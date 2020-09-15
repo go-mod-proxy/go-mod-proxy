@@ -1,0 +1,32 @@
+clientAuth:
+  enabled: false
+gitHub:
+  - host: github.com
+    gitHubApps:
+      - id: 12345
+        privateKey: |
+          -----BEGIN RSA PRIVATE KEY-----
+          ... private key of GitHub App here
+          -----END RSA PRIVATE KEY-----
+
+httpProxy:
+  noProxy: 'my-internal-host.example.com,localhost,127.0.0.1'
+  url: http://my-http-forward-proxy.example.com:3128
+  user: proxyBasicAuthUser
+  password: proxyBasicAuthPassword
+  
+# Controls the maximum amount of Go child processes that can be running at any one time     
+maxChildProcesses: 30
+
+parentProxy:
+  url: "https://proxy.golang.org/"
+
+privateModules:
+  - pathPrefix: "github.com/my-private-org"
+    auth:
+      # ID of the GitHub App to use to authenticate to repositories of my-private-org
+      gitHubApp: 12345
+
+storage:
+  gcs:
+    bucket: my-gcs-bucket

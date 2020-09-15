@@ -1,0 +1,83 @@
+clientAuth:
+  acl:
+    # Intuitively, this access control lits gives only authenticated identity x access
+    # to modules in github.com/myorg.
+    # An empty access control list is equivalent to an access control list with a single
+    # element {"access": "deny"}
+
+    - # allow authenticated identity named x access to modules in the "myorg" GitHub organisation.
+      # identities is a list of names of authenticated identities (as defined below) to which this access control list element
+      # applies. If this element does not have an entry with key "identities" then this element applies to all
+      # authenticated identities.
+      identities: ["x"]
+
+      # moduleRegexp is a regular expression. If the module does not match this regular expression then this access
+      # control lists element does not apply. If this element does not have an entry with key "moduleRegexp" then
+      # this element applies to all modules.
+      moduleRegexp: "^github\\.com/myorg/"
+      access: allow
+    
+    - # an element in the lists without a key "identities" will apply to any authenticated user.
+      moduleRegexp: "^github\\.com/myorg/"
+      access: deny
+
+    - # an element in the list without a key moduleRegexp will apply to any module.
+      access: allow
+
+  authenticators:
+    accessToken:
+      audience: https://example.com/
+      secret: asdfasdf
+      timeToLive: 15m
+    gceInstanceIdentity:
+      # The audience expected when verifying GCE instance identity JWT tokens.
+      audience: https://example.com/
+
+  enabled: true
+
+  identities:
+    - name: x
+      # Identity x has a password, which allows authentication to the Go module proxy
+      # via POST /auth/userpassword
+      password: test
+
+    - name: y
+      # Identity y is bound to a Google Service Account, so that Google Compute Engine instances
+      # with service account my-google-sa@my-google-project.iam.gserviceaccount.com can authenticate
+      # to the Go module proxy (POST /auth/gce) by passing an instance identity token.
+      # See https://cloud.google.com/compute/docs/instances/verifying-instance-identity#verifying
+      # This method of authentication is similar to Vault's GCE auth method:
+      # https://www.vaultproject.io/docs/auth/gcp.html#gce-login
+      gceInstanceIdentityBinding:
+        email: 'my-google-sa@my-google-project.iam.gserviceaccount.com'
+
+gitHub:
+  - host: github.com
+    gitHubApps:
+      - id: 12345
+        privateKey: |
+          -----BEGIN RSA PRIVATE KEY-----
+          ... private key of GitHub App here
+          -----END RSA PRIVATE KEY-----
+
+httpProxy:
+  noProxy: 'my-internal-host.example.com,localhost,127.0.0.1'
+  url: http://my-http-forward-proxy.example.com:3128
+  user: proxyBasicAuthUser
+  password: proxyBasicAuthPassword
+  
+# Controls the maximum amount of Go child processes that can be running at any one time     
+maxChildProcesses: 30
+
+parentProxy:
+  url: "https://proxy.golang.org/"
+
+privateModules:
+  - pathPrefix: "github.com/my-private-org"
+    auth:
+      # ID of the GitHub App to use to authenticate to repositories of my-private-org
+      gitHubApp: 12345
+
+storage:
+  gcs:
+    bucket: my-gcs-bucket
