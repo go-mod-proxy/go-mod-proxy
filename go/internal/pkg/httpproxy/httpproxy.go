@@ -11,7 +11,7 @@ import (
 
 	jasperurl "github.com/jbrekelmans/go-lib/url"
 
-	"github.com/jbrekelmans/go-module-proxy/internal/pkg/util"
+	"github.com/go-mod-proxy/go/internal/pkg/util"
 )
 
 type domainPort struct {

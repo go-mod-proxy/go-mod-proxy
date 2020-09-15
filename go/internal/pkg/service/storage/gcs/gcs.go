@@ -22,8 +22,8 @@ import (
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/api/googleapi"
 
-	"github.com/jbrekelmans/go-module-proxy/internal/pkg/service/storage"
-	"github.com/jbrekelmans/go-module-proxy/internal/pkg/util"
+	"github.com/go-mod-proxy/go/internal/pkg/service/storage"
+	"github.com/go-mod-proxy/go/internal/pkg/util"
 )
 
 const (

@@ -1,5 +1,6 @@
 clientAuth:
   enabled: false
+
 gitHub:
   - host: github.com
     gitHubApps:
@@ -10,16 +11,21 @@ gitHub:
           -----END RSA PRIVATE KEY-----
 
 httpProxy:
+  # localhost and loopback IP addresses are implicitly added to the HTTP forward proxy bypass list,
+  # but are included for illustration.
   noProxy: 'my-internal-host.example.com,localhost,127.0.0.1'
   url: http://my-http-forward-proxy.example.com:3128
+
+  # Optional user and password used to encode in the Proxy-Authorization HTTP header using the Basic scheme.
+  # NOTE: only basic authentication to HTTP proxies is supported.
   user: proxyBasicAuthUser
   password: proxyBasicAuthPassword
   
-# Controls the maximum amount of Go child processes that can be running at any one time     
+# Controls the maximum amount of Go child processes that can be running at any one time
 maxChildProcesses: 30
 
 parentProxy:
-  url: "https://proxy.golang.org/"
+  url: https://proxy.golang.org
 
 privateModules:
   - pathPrefix: "github.com/my-private-org"
@@ -27,6 +33,46 @@ privateModules:
       # ID of the GitHub App to use to authenticate to repositories of my-private-org
       gitHubApp: 12345
 
+publicModules:
+  # The checksum database to use when downloading public modules.
+  # The value refers to the name of an element of the top-level sumDatabases list (see below).
+  # NOTE: suppose the value is set to <x>: if the parent proxy is configured and its GET /sumdb/<x>/supported
+  # endpoint responds with 200 OK then the sum database proxied by the parent proxy has preference over
+  # the one configured here.
+  # Defaults to the Go toolchain's default sum database (https://sum.golang.org/).
+  # This module proxy server does not support disabling authentication of public modules
+  # against a sum database.
+  sumDatabase: &googleSumDatabase
+    name: sum.golang.org
+    # The public key is only used by this module proxy server if this sum database is used to authenticate public
+    # modules but is required nevertheless.
+    # See also https://golang.org/src/cmd/go/internal/modfetch/key.go?h=sum.golang.org
+    publicKey: 033de0ae+Ac4zctda0e5eza+HJyk9SxEdh+s3Ux18htTTAD8OuAn8
+    # URL of the sum database. Required.
+    url: https://sum.golang.org
+    
 storage:
   gcs:
     bucket: my-gcs-bucket
+
+sumDatabaseProxy:
+  # Set to true to improve performance of clients in some configurations.
+  # When the Go toolchain is configured to use a module proxy and sum database <x>, but the module proxy
+  # does not proxy sum database <x>, then the Go toolchain will attempt to connect to sum database <x>
+  # directly unless the module proxy does not respond with status 404 or 410 to the GET /sumdb/supported endpoint.
+  # This module proxy server responds with 410 to the GET /sumdb/supported endpoint if and only if 
+  # discourageClientDirectSumDatabaseConnections is false.
+  # Defaults to false.
+  # Performance of clients such as the Go toolchain can improve because clients can be told to skip attempting to connect directly
+  # to a sum database when that is known to always fail (i.e. because this module proxy server and clients are running in a corporate
+  # network).
+  # NOTE: privacy would also improve IF discourageClientDirectSumDatabaseConnections is true and
+  # this module proxy server were to cache sum database requests (but it does not cache such requests:
+  # https://github.com/go-mod-proxy/go-mod-proxy/issues/1).
+  # See also https://go.googlesource.com/proposal/+/master/design/25530-sumdb.md#proxying-a-checksum-database
+  discourageClientDirectSumDatabaseConnections: true
+
+  sumDatabases:
+    # Configures the set of sum databases proxied by this module proxy server.
+    # See https://go.googlesource.com/proposal/+/master/design/25530-sumdb.md#proxying-a-checksum-database
+    - <<: *googleSumDatabase

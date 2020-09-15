@@ -13,8 +13,8 @@ import (
 	jasperurl "github.com/jbrekelmans/go-lib/url"
 	"gopkg.in/yaml.v2"
 
-	internalhttpproxy "github.com/jbrekelmans/go-module-proxy/internal/pkg/httpproxy"
-	"github.com/jbrekelmans/go-module-proxy/internal/pkg/util"
+	internalhttpproxy "github.com/go-mod-proxy/go/internal/pkg/httpproxy"
+	"github.com/go-mod-proxy/go/internal/pkg/util"
 )
 
 // LoadFromYAMLFile loads configuration from a YAML file.
@@ -142,6 +142,9 @@ func (l *Loader) validateConfig(vctx *validateValueContext, cfg *Config) {
 			vctxModuleRewriteRules.Child(i).AddRequiredError()
 		}
 	}
+	if l.cfg.ParentProxy != nil {
+		l.validateParentProxy(vctx.Child("parentProxy"), l.cfg.ParentProxy)
+	}
 	l.validatePrivateModules(vctx.Child("privateModules"), l.cfg.PrivateModules)
 	for i, privateModulesElement := range l.cfg.PrivateModules {
 		if privateModulesElement != nil && privateModulesElement.isValid {
@@ -171,13 +174,18 @@ func (l *Loader) validateConfig(vctx *validateValueContext, cfg *Config) {
 			}
 		}
 	}
-	if l.cfg.ParentProxy != nil {
-		l.validateParentProxy(vctx.Child("parentProxy"), l.cfg.ParentProxy)
+	if l.cfg.PublicModules.SumDatabase != nil {
+		l.validateSumDatabaseElement(vctx.Child("publicModules").Child("sumDatabase"), l.cfg.PublicModules.SumDatabase)
 	}
 	if l.cfg.Storage == nil {
 		vctx.Child("storage").AddRequiredError()
 	} else {
 		l.validateStorage(vctx.Child("storage"), l.cfg.Storage)
+	}
+	if l.cfg.SumDatabaseProxy == nil {
+		vctx.Child("sumDatabaseProxy").AddRequiredError()
+	} else {
+		l.validateSumDatabaseProxy(vctx.Child("sumDatabaseProxy"), l.cfg.SumDatabaseProxy)
 	}
 }
 
@@ -386,5 +394,59 @@ func (l *Loader) validateStorage(vctx *validateValueContext, storage *Storage) {
 		vctx.AddError(".gcs must be set (to a non-null value)")
 	} else {
 		l.validateGCSStorage(vctx.Child("gcs"), storage.GCS)
+	}
+}
+
+func (l *Loader) validateSumDatabaseElement(vctx *validateValueContext, sumDBElement *SumDatabaseElement) {
+	n := vctx.ErrorCount()
+	var err error
+	sumDBElement.URLParsed, err = jasperurl.ValidateURL(sumDBElement.URL, jasperurl.ValidateURLOptions{
+		Abs:                                      jasperurl.NewBool(true),
+		AllowedSchemes:                           []string{"https"},
+		NormalizePort:                            new(bool),
+		StripFragment:                            true,
+		StripQuery:                               true,
+		StripPathTrailingSlashes:                 true,
+		StripPathTrailingSlashesNoPercentEncoded: true,
+		User:                                     new(bool),
+	})
+	if err != nil {
+		vctx.Child("url").AddErrorf("value is not a valid URL: %v", err)
+	}
+	if vctx.Child("name").RequiredString(sumDBElement.Name) {
+		if len(strings.Fields(sumDBElement.Name)) > 1 {
+			vctx.Child("name").AddError("value contains illegal unicode white space")
+		}
+		if strings.ContainsAny(sumDBElement.Name, "+") {
+			vctx.Child("name").AddError(`value contains illegal character "+"`)
+		}
+	}
+	if vctx.Child("publicKey").RequiredString(sumDBElement.PublicKey) {
+		if len(strings.Fields(sumDBElement.Name)) > 1 {
+			vctx.Child("name").AddError("value contains illegal unicode white space")
+		}
+	}
+	sumDBElement.isValid = n != vctx.ErrorCount()
+}
+
+func (l *Loader) validateSumDatabaseProxy(vctx *validateValueContext, sumDatabaseProxy *SumDatabaseProxy) {
+	nameIndex := map[string]int{}
+	vctxSumDatabases := vctx.Child("sumDatabases")
+	for i, sumDBElement := range sumDatabaseProxy.SumDatabases {
+		vctxSumDBElement := vctxSumDatabases.Child(i)
+		if sumDBElement == nil {
+			vctxSumDBElement.AddRequiredError()
+		} else {
+			l.validateSumDatabaseElement(vctxSumDBElement, sumDBElement)
+			if sumDBElement.isValid {
+				if state := nameIndex[sumDBElement.Name]; state == 0 {
+					nameIndex[sumDBElement.Name] = i + 1
+				} else if state > 0 {
+					vctxSumDatabases.AddErrorf("no two elements must have the same .name but [%d] and [%d] have .name %#v", i,
+						state-1, sumDBElement.Name)
+					nameIndex[sumDBElement.Name] = -1
+				}
+			}
+		}
 	}
 }

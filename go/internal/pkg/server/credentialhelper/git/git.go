@@ -9,15 +9,16 @@ import (
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
 
-	"github.com/jbrekelmans/go-module-proxy/internal/pkg/config"
-	"github.com/jbrekelmans/go-module-proxy/internal/pkg/github"
-	"github.com/jbrekelmans/go-module-proxy/internal/pkg/util"
+	"github.com/go-mod-proxy/go/internal/pkg/config"
+	"github.com/go-mod-proxy/go/internal/pkg/github"
+	"github.com/go-mod-proxy/go/internal/pkg/util"
 )
 
 type ServerOptions struct {
 	GitHubClientManager *github.GitHubClientManager
-	ParentRouter        *mux.Router
-	PrivateModules      []*config.PrivateModulesElement
+	// UseEncodedPath must have been called on ParentRouter.
+	ParentRouter   *mux.Router
+	PrivateModules []*config.PrivateModulesElement
 }
 
 type Server struct {

@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	internalhttpproxy "github.com/jbrekelmans/go-module-proxy/internal/pkg/httpproxy"
+	internalhttpproxy "github.com/go-mod-proxy/go/internal/pkg/httpproxy"
 )
 
 type Access int
@@ -63,7 +63,9 @@ type Config struct {
 	ModuleRewriteRules []*ModuleRewriteRule     `yaml:"moduleRewriteRules"`
 	ParentProxy        *ParentProxy             `yaml:"parentProxy"`
 	PrivateModules     []*PrivateModulesElement `yaml:"privateModules"`
+	PublicModules      PublicModules            `yaml:"publicModules"`
 	Storage            *Storage                 `yaml:"storage"`
+	SumDatabaseProxy   *SumDatabaseProxy        `yaml:"sumDatabaseProxy"`
 }
 
 type GCEInstanceIdentityAuthenticator struct {
@@ -72,6 +74,10 @@ type GCEInstanceIdentityAuthenticator struct {
 
 type GCEInstanceIdentityBinding struct {
 	Email string `yaml:"email"`
+}
+
+type GCSStorage struct {
+	Bucket string `yaml:"bucket"`
 }
 
 type GitHubApp struct {
@@ -123,10 +129,30 @@ type PrivateModulesElementAuth struct {
 	GitHubApp *int64 `yaml:"gitHubApp"`
 }
 
+type PublicModules struct {
+	SumDatabase *SumDatabaseElement `yaml:"sumDatabase"`
+}
+
 type Storage struct {
 	GCS *GCSStorage `yaml:"gcs"`
 }
 
-type GCSStorage struct {
-	Bucket string `yaml:"bucket"`
+type SumDatabaseElement struct {
+	isValid   bool     `yaml:"-"`
+	Name      string   `yaml:"name"`
+	PublicKey string   `yaml:"publicKey"`
+	URL       string   `yaml:"url"`
+	URLParsed *url.URL `yaml:"-"`
+}
+
+// FormatGoSumDBEnvVar represents s as the value of a GOSUMDB environment variable as defined
+// by the Go toolchain.
+func (s *SumDatabaseElement) FormatGoSumDBEnvVar() string {
+	return fmt.Sprintf("%s+%s %s", s.Name, s.PublicKey, s.URLParsed.String())
+}
+
+type SumDatabaseProxy struct {
+	DiscourageClientDirectSumDatabaseConnections bool `yaml:"discourageClientDirectSumDatabaseConnections"`
+
+	SumDatabases []*SumDatabaseElement `yaml:"sumDatabases"`
 }

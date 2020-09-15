@@ -13,10 +13,10 @@ import (
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/mod/module"
 
-	"github.com/jbrekelmans/go-module-proxy/internal/pkg/config"
-	"github.com/jbrekelmans/go-module-proxy/internal/pkg/server/common"
-	"github.com/jbrekelmans/go-module-proxy/internal/pkg/service/auth"
-	servicegomodule "github.com/jbrekelmans/go-module-proxy/internal/pkg/service/gomodule"
+	"github.com/go-mod-proxy/go/internal/pkg/config"
+	"github.com/go-mod-proxy/go/internal/pkg/server/common"
+	"github.com/go-mod-proxy/go/internal/pkg/service/auth"
+	servicegomodule "github.com/go-mod-proxy/go/internal/pkg/service/gomodule"
 )
 
 const (
@@ -43,7 +43,8 @@ type ServerOptions struct {
 	GoModuleService      servicegomodule.Service
 	ModuleRewriteRules   []*config.ModuleRewriteRule
 	RequestAuthenticator common.RequestAuthenticatorFunc
-	Router               *mux.Router
+	// UseEncodedPath must have been called on Router.
+	Router *mux.Router
 }
 
 // Server implements the Go module proxy protocol: https://golang.org/cmd/go/#hdr-Module_proxy_protocol.
@@ -63,9 +64,6 @@ func NewServer(opts ServerOptions) (*Server, error) {
 	}
 	if opts.RequestAuthenticator == nil {
 		return nil, fmt.Errorf("opts.RequestAuthenticator must not be nil")
-	}
-	if opts.Router == nil {
-		return nil, fmt.Errorf("opts.Router must not be nil")
 	}
 	s := &Server{
 		acl:                  opts.AccessControlList,

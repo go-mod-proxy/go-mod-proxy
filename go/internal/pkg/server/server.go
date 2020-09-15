@@ -10,13 +10,14 @@ import (
 	log "github.com/sirupsen/logrus"
 	"gopkg.in/square/go-jose.v2/json"
 
-	"github.com/jbrekelmans/go-module-proxy/internal/pkg/config"
-	servercommon "github.com/jbrekelmans/go-module-proxy/internal/pkg/server/common"
-	servergomodule "github.com/jbrekelmans/go-module-proxy/internal/pkg/server/gomodule"
-	serviceauth "github.com/jbrekelmans/go-module-proxy/internal/pkg/service/auth"
-	serviceauthaccesstoken "github.com/jbrekelmans/go-module-proxy/internal/pkg/service/auth/accesstoken"
-	serviceauthgce "github.com/jbrekelmans/go-module-proxy/internal/pkg/service/auth/gce"
-	servicegomodule "github.com/jbrekelmans/go-module-proxy/internal/pkg/service/gomodule"
+	"github.com/go-mod-proxy/go/internal/pkg/config"
+	servercommon "github.com/go-mod-proxy/go/internal/pkg/server/common"
+	servergomodule "github.com/go-mod-proxy/go/internal/pkg/server/gomodule"
+	servergosumdbproxy "github.com/go-mod-proxy/go/internal/pkg/server/gosumdbproxy"
+	serviceauth "github.com/go-mod-proxy/go/internal/pkg/service/auth"
+	serviceauthaccesstoken "github.com/go-mod-proxy/go/internal/pkg/service/auth/accesstoken"
+	serviceauthgce "github.com/go-mod-proxy/go/internal/pkg/service/auth/gce"
+	servicegomodule "github.com/go-mod-proxy/go/internal/pkg/service/gomodule"
 )
 
 type ServerOptions struct {
@@ -28,6 +29,8 @@ type ServerOptions struct {
 	IdentityStore            serviceauth.IdentityStore
 	ModuleRewriteRules       []*config.ModuleRewriteRule
 	Realm                    string
+	SumDatabaseProxy         *config.SumDatabaseProxy
+	Transport                http.RoundTripper
 }
 
 type Server struct {
@@ -47,6 +50,12 @@ func NewServer(opts ServerOptions) (*Server, error) {
 	if opts.IdentityStore == nil {
 		return nil, fmt.Errorf("opts.IdentityStore must not be nil")
 	}
+	if opts.SumDatabaseProxy == nil {
+		return nil, fmt.Errorf("opts.SumDatabaseProxy must not be nil")
+	}
+	if opts.Transport == nil {
+		return nil, fmt.Errorf("opts.Transport must not be nil")
+	}
 	accessTokenAuthenticator, err := jasperhttp.NewBearerAuthorizer(opts.Realm, opts.AccessTokenAuthenticator.Authenticate)
 	if err != nil {
 		return nil, err
@@ -65,7 +74,7 @@ func NewServer(opts ServerOptions) (*Server, error) {
 		realm:                    opts.Realm,
 		router:                   router,
 	}
-	authRouter := s.router.PathPrefix("/auth").Subrouter()
+	authRouter := s.router.PathPrefix("/auth/").Subrouter()
 	authRouter.Path("/userpassword").Methods(http.MethodPost).HandlerFunc(s.authenticateUserPassword)
 	if opts.GCEAuthenticator != nil {
 		gceBearerAuth, err := jasperhttp.NewBearerAuthorizer(opts.Realm, opts.GCEAuthenticator.Authenticate)
@@ -80,6 +89,14 @@ func NewServer(opts ServerOptions) (*Server, error) {
 			authenticatedIdentity := data.(*serviceauth.Identity)
 			s.serveHTTPIssueToken(w, authenticatedIdentity)
 		})
+	}
+	_, err = servergosumdbproxy.NewServer(servergosumdbproxy.ServerOptions{
+		ParentRouter:     router,
+		SumDatabaseProxy: opts.SumDatabaseProxy,
+		Transport:        opts.Transport,
+	})
+	if err != nil {
+		return nil, err
 	}
 	_, err = servergomodule.NewServer(servergomodule.ServerOptions{
 		AccessControlList:    opts.AccessControlList,

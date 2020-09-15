@@ -20,16 +20,16 @@ import (
 	"google.golang.org/api/iam/v1"
 	"google.golang.org/api/option"
 
-	"github.com/jbrekelmans/go-module-proxy/internal/pkg/config"
-	"github.com/jbrekelmans/go-module-proxy/internal/pkg/github"
-	"github.com/jbrekelmans/go-module-proxy/internal/pkg/server"
-	"github.com/jbrekelmans/go-module-proxy/internal/pkg/server/credentialhelper"
-	"github.com/jbrekelmans/go-module-proxy/internal/pkg/service/auth"
-	serviceauthaccesstoken "github.com/jbrekelmans/go-module-proxy/internal/pkg/service/auth/accesstoken"
-	serviceauthgce "github.com/jbrekelmans/go-module-proxy/internal/pkg/service/auth/gce"
-	servicegomodulegocmd "github.com/jbrekelmans/go-module-proxy/internal/pkg/service/gomodule/gocmd"
-	servicestorage "github.com/jbrekelmans/go-module-proxy/internal/pkg/service/storage"
-	servicestoragegcs "github.com/jbrekelmans/go-module-proxy/internal/pkg/service/storage/gcs"
+	"github.com/go-mod-proxy/go/internal/pkg/config"
+	"github.com/go-mod-proxy/go/internal/pkg/github"
+	"github.com/go-mod-proxy/go/internal/pkg/server"
+	"github.com/go-mod-proxy/go/internal/pkg/server/credentialhelper"
+	"github.com/go-mod-proxy/go/internal/pkg/service/auth"
+	serviceauthaccesstoken "github.com/go-mod-proxy/go/internal/pkg/service/auth/accesstoken"
+	serviceauthgce "github.com/go-mod-proxy/go/internal/pkg/service/auth/gce"
+	servicegomodulegocmd "github.com/go-mod-proxy/go/internal/pkg/service/gomodule/gocmd"
+	servicestorage "github.com/go-mod-proxy/go/internal/pkg/service/storage"
+	servicestoragegcs "github.com/go-mod-proxy/go/internal/pkg/service/storage/gcs"
 )
 
 // CLI is a type reflected by "github.com/alecthomas/kong" that configures the CLI command for the client forward proxy.
@@ -213,6 +213,7 @@ func Run(ctx context.Context, opts *CLI) error {
 		MaxParallelCommands: cfg.MaxChildProcesses,
 		ParentProxy:         parentProxy,
 		PrivateModules:      cfg.PrivateModules,
+		PublicModules:       &cfg.PublicModules,
 		ScratchDir:          scratchDir,
 		Storage:             storage,
 	})
@@ -227,6 +228,8 @@ func Run(ctx context.Context, opts *CLI) error {
 		GoModuleService:          goModuleService,
 		IdentityStore:            identityStore,
 		Realm:                    realm,
+		SumDatabaseProxy:         cfg.SumDatabaseProxy,
+		Transport:                httpTransport,
 	})
 	if err != nil {
 		return err

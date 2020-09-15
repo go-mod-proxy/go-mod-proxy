@@ -17,11 +17,11 @@ import (
 	log "github.com/sirupsen/logrus"
 	module "golang.org/x/mod/module"
 
-	"github.com/jbrekelmans/go-module-proxy/internal/pkg/config"
-	"github.com/jbrekelmans/go-module-proxy/internal/pkg/git"
-	gomoduleservice "github.com/jbrekelmans/go-module-proxy/internal/pkg/service/gomodule"
-	"github.com/jbrekelmans/go-module-proxy/internal/pkg/service/storage"
-	"github.com/jbrekelmans/go-module-proxy/internal/pkg/util"
+	"github.com/go-mod-proxy/go/internal/pkg/config"
+	"github.com/go-mod-proxy/go/internal/pkg/git"
+	gomoduleservice "github.com/go-mod-proxy/go/internal/pkg/service/gomodule"
+	"github.com/go-mod-proxy/go/internal/pkg/service/storage"
+	"github.com/go-mod-proxy/go/internal/pkg/util"
 )
 
 const (
@@ -38,7 +38,7 @@ type goModuleInfo struct {
 	} // error loading module
 	Version  string
 	Versions []string
-	// Info is the path to a file containing JSON marshalling of a "github.com/jbrekelmans/go-module-proxy/internal/app/service/gomodule".Info value.
+	// Info is the path to a file containing JSON marshalling of a "github.com/go-mod-proxy/go/internal/app/service/gomodule".Info value.
 	Info  string
 	GoMod string
 	// Zip is the path to a file containing Zip file
@@ -55,20 +55,22 @@ type ServiceOptions struct {
 	MaxParallelCommands      int
 	ParentProxy              *url.URL
 	PrivateModules           []*config.PrivateModulesElement
+	PublicModules            *config.PublicModules
 	ScratchDir               string
 	Storage                  storage.Storage
 }
 
 type Service struct {
-	envGoProxy               string
-	gitCredentialHelperShell string
-	goBinFile                string
-	httpProxyInfo            *config.HTTPProxyInfo
-	privateModules           []*config.PrivateModulesElement
-	runCmdResourcePool       *maxParallelismResourcePool
-	scratchDir               string
-	storage                  storage.Storage
-	tempGoEnvBaseEnviron     *util.Environ
+	envGoProxy                 string
+	gitCredentialHelperShell   string
+	goBinFile                  string
+	httpProxyInfo              *config.HTTPProxyInfo
+	privateModules             []*config.PrivateModulesElement
+	publicModulesGoSumDBEnvVar string
+	runCmdResourcePool         *maxParallelismResourcePool
+	scratchDir                 string
+	storage                    storage.Storage
+	tempGoEnvBaseEnviron       *util.Environ
 }
 
 var _ gomoduleservice.Service = (*Service)(nil)
@@ -82,6 +84,9 @@ func NewService(opts ServiceOptions) (s *Service, err error) {
 	}
 	if opts.HTTPProxyInfo == nil {
 		return nil, fmt.Errorf("opts.HTTPProxyInfo must not be nil")
+	}
+	if opts.PublicModules == nil {
+		return nil, fmt.Errorf("opts.PublicModules must not be nil")
 	}
 	if opts.Storage == nil {
 		return nil, fmt.Errorf("opts.Storage must not be nil")
@@ -112,15 +117,20 @@ func NewService(opts ServiceOptions) (s *Service, err error) {
 	if err != nil {
 		return nil, err
 	}
+	var publicModulesGoSumDBEnvVar string
+	if opts.PublicModules.SumDatabase != nil {
+		publicModulesGoSumDBEnvVar = opts.PublicModules.SumDatabase.FormatGoSumDBEnvVar()
+	}
 	ss := &Service{
-		gitCredentialHelperShell: opts.GitCredentialHelperShell,
-		goBinFile:                goBinFile2,
-		httpProxyInfo:            opts.HTTPProxyInfo,
-		privateModules:           opts.PrivateModules,
-		scratchDir:               scratchDir2,
-		runCmdResourcePool:       runCmdResourcePool,
-		storage:                  opts.Storage,
-		tempGoEnvBaseEnviron:     getTempGoEnvBaseEnviron(),
+		gitCredentialHelperShell:   opts.GitCredentialHelperShell,
+		goBinFile:                  goBinFile2,
+		httpProxyInfo:              opts.HTTPProxyInfo,
+		privateModules:             opts.PrivateModules,
+		publicModulesGoSumDBEnvVar: publicModulesGoSumDBEnvVar,
+		scratchDir:                 scratchDir2,
+		runCmdResourcePool:         runCmdResourcePool,
+		storage:                    opts.Storage,
+		tempGoEnvBaseEnviron:       getTempGoEnvBaseEnviron(),
 	}
 	if opts.ParentProxy != nil {
 		parentProxyStr := opts.ParentProxy.String()
@@ -185,14 +195,6 @@ func (s *Service) getGoModuleAndIndexIfNeeded(ctx context.Context, tempGoEnv *te
 		err = fmt.Errorf("command %s succeeded but got unexpected error loading module:\n%s", formatArgs(args), strLog)
 		return
 	}
-
-	// if strings.Contains(downloadInfo.Error.Err, "unknown revision") {
-	// 	log.Tracef("NOT FOUND")
-	// 	err = gomoduleservice.NewErrorf(gomoduleservice.NotFound, "command %s succeeded but got unexpected error loading module:\n%s",
-	// 		formatArgs(args), strLog)
-	// 	return
-	// }
-
 	infoJSONBytes, err := ioutil.ReadFile(downloadInfo.Info)
 	if err != nil {
 		err = fmt.Errorf(`unexpected error reading .info file created by %s command: %w`, formatArgs(args), err)
@@ -524,8 +526,11 @@ func (s *Service) initializeTempGoEnvForModule(ctx context.Context, tempGoEnv *t
 			// Use default proxy
 			tempGoEnv.Environ.Unset("GOPROXY")
 		}
-		// Use default sum database
-		tempGoEnv.Environ.Unset("GOSUMDB")
+		if s.publicModulesGoSumDBEnvVar != "" {
+			tempGoEnv.Environ.Set("GOSUMDB", s.publicModulesGoSumDBEnvVar)
+		} else {
+			tempGoEnv.Environ.Unset("GOSUMDB")
+		}
 	}
 	tempGoEnv.Environ.Set("no_proxy", s.httpProxyInfo.LibcurlNoProxy)
 	tempGoEnv.Environ.Set("https_proxy", s.httpProxyInfo.LibcurlHTTPSProxy)
