@@ -1,5 +1,6 @@
 ![CI](https://github.com/go-mod-proxy/go-mod-proxy/workflows/ci/badge.svg)
 ![Docker Hub](https://img.shields.io/docker/image-size/jbrekelmans/go-module-proxy?sort=date)
+[![License](https://img.shields.io/badge/License-Apache%202.0-yellowgreen.svg)](https://opensource.org/licenses/Apache-2.0)
 
 # Introduction
 A Go module proxy that:
