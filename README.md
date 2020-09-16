@@ -1,3 +1,5 @@
+![CI](https://github.com/go-mod-proxy/go-mod-proxy/workflows/ci/badge.svg)
+
 # Introduction
 A Go module proxy that:
 1. Can front private repositories and supports authentication to GitHub repositories via GitHub App credentials.
