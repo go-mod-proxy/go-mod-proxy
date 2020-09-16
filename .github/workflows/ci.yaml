@@ -5,12 +5,33 @@ on:
     branches: ["master"]
 jobs:
   ci:
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-go@v2
         with:
-          go-version: '^1.14.1' # The Go version to download (if necessary) and use.
-      - run: |
-          cd go
-          go 
-        
+          go-version: '1.14' # The Go version to download (if necessary) and use.
+
+      - name: Test
+        run: ./scripts/main.sh test
+
+      - name: Build
+        run: ./scripts/main.sh build
+
+      - name: Docker Login
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Docker Push
+        run: |
+          GITHUB_SHA_SHORT=$(git rev-parse --short "$GITHUB_SHA")
+          IMAGE=jbrekelmans/go-module-proxy:$GITHUB_SHA_SHORT
+          docker tag jbrekelmans/go-module-proxy:latest "${IMAGE}"
+          docker push "${IMAGE}"
+      
+      - name: Docker Push (latest)
+        if: ${{ github.ref == 'ref/head/master' }}
+        run: |
+          docker push jbrekelmans/go-module-proxy:latest

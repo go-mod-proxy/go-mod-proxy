@@ -57,21 +57,32 @@ run-go() {
   popd 1>/dev/null
 }
 
+test() {
+  local GO_VERSION_MINOR
+  GO_VERSION_MINOR=$(get_go_version)
+  if [[ ${GO_VERSION_MINOR} -ne 14 ]]; then
+    1>&2 echo "unsupported go version 1.${GO_VERSION_MINOR}"
+    return 1
+  fi
+  pushd "${CONTAINING_DIR}"/../go 1>/dev/null
+  go test ./...
+  popd 1>/dev/null
+}
+
 main() {
   case "${1-build}" in
+    test)
+      test
+      ;;
     build)
       build
-      ;;
-    build-push)
-      build
-      docker push jbrekelmans/go-module-proxy:latest
       ;;
     run-docker)
       build
       docker run \
         -v="${CONTAINING_DIR}"/config.yaml:/mnt/config.yaml \
         -p='3000:3000' \
-        gomoduleproxy:latest \
+        jbrekelmans/go-module-proxy:latest \
         --config-file=/mnt/config.yaml \
         --log-level=trace \
         --port=3000 \
