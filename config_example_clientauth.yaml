@@ -100,8 +100,7 @@ privateModules:
 
 publicModules:
   # The checksum database to use when downloading public modules.
-  # The value refers to the name of an element of the top-level sumDatabases list (see below).
-  # NOTE: suppose the value is set to <x>: if the parent proxy is configured and its GET /sumdb/<x>/supported
+  # NOTE: suppose the value's name is set to <x>: if the parent proxy is configured and its GET /sumdb/<x>/supported
   # endpoint responds with 200 OK then the sum database proxied by the parent proxy has preference over
   # the one configured here.
   # Defaults to the Go toolchain's default sum database (https://sum.golang.org/).
