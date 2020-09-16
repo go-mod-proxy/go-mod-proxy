@@ -165,7 +165,7 @@ func Run(ctx context.Context, opts *CLI) error {
 	}
 	accessTokenAuth, err := serviceauthaccesstoken.NewAuthenticator(
 		cfg.ClientAuth.Authenticators.AccessToken.Audience,
-		[]byte(cfg.ClientAuth.Authenticators.AccessToken.Secret),
+		cfg.ClientAuth.Authenticators.AccessToken.Secret.Plaintext,
 		cfg.ClientAuth.Authenticators.AccessToken.TimeToLive,
 		identityStore,
 	)

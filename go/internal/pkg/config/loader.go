@@ -1,13 +1,16 @@
 package config
 
 import (
+	"bytes"
 	"crypto/rsa"
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net/url"
 	"os"
+	"path/filepath"
 	"strings"
 
 	jasperurl "github.com/jbrekelmans/go-lib/url"
@@ -24,7 +27,11 @@ func LoadFromYAMLFile(file string) (*Config, error) {
 		return nil, err
 	}
 	defer fd.Close()
-	loader, err := NewLoader(fd)
+	dir := filepath.Dir(file)
+	if dir == file {
+		return nil, fmt.Errorf("invalid file")
+	}
+	loader, err := NewLoader(fd, dir)
 	if err != nil {
 		return nil, err
 	}
@@ -38,23 +45,32 @@ func LoadFromYAMLFile(file string) (*Config, error) {
 // Loader is a helper type to split up configuration loading into multiple functions.
 type Loader struct {
 	cfg            *Config
+	dir            string
 	identityByName map[string]*Identity
 	errors         *errorBag
 	reader         io.Reader
 }
 
 // NewLoader encapsulates correct initialization of Loader.
-func NewLoader(reader io.Reader) (*Loader, error) {
+func NewLoader(reader io.Reader, dir string) (*Loader, error) {
 	if reader == nil {
 		return nil, fmt.Errorf("reader must not be nil")
 	}
 	l := &Loader{
 		cfg:            &Config{},
+		dir:            dir,
 		errors:         newErrorBag(),
 		identityByName: map[string]*Identity{},
 		reader:         reader,
 	}
 	return l, nil
+}
+
+func (l *Loader) resolveFile(file string) string {
+	if filepath.IsAbs(file) {
+		return file
+	}
+	return filepath.Join(l.dir, file)
 }
 
 // Run loads the configuration.
@@ -94,7 +110,10 @@ func (l *Loader) validateConfig(vctx *validateValueContext, cfg *Config) {
 			}
 		}
 		if identity.Password != nil {
-			vctxIdentity.Child("password").RequiredString(*identity.Password)
+			l.validateSecret(vctxIdentity.Child("password"), identity.Password)
+			if identity.Password.isValid && len(identity.Password.Plaintext) == 0 {
+				vctxIdentity.Child("password").AddError("effective value of secret must not be empty")
+			}
 		}
 		if b := identity.GCEInstanceIdentityBinding; b != nil {
 			vctxIdentity.Child("gceInstanceIdentityBinding").RequiredString(b.Email)
@@ -226,8 +245,13 @@ func (l *Loader) validateGitHubInstance(vctx *validateValueContext, gitHubInstan
 			vctxApp.Child("id").AddError("value must not be negative")
 		} else {
 			vctxAppPrivateKey := vctxApp.Child("privateKey")
-			if vctxAppPrivateKey.RequiredString(app.PrivateKey) {
-				app.PrivateKeyParsed = l.validateRSAPrivateKey(vctxAppPrivateKey, app.PrivateKey)
+			if app.PrivateKey == nil {
+				vctxAppPrivateKey.AddRequiredError()
+			} else {
+				l.validateSecret(vctxAppPrivateKey, app.PrivateKey)
+				if app.PrivateKey.isValid {
+					app.PrivateKeyParsed = l.validateRSAPrivateKey(vctxAppPrivateKey, app.PrivateKey.Plaintext)
+				}
 			}
 			if state := appIndex[app.ID]; state == 0 {
 				appIndex[app.ID] = i + 1
@@ -263,22 +287,25 @@ func (l *Loader) validateHTTPProxy(vctx *validateValueContext, httpProxy *HTTPPr
 			vctx.Child("user").AddError(`value contains illegal zero byte or illegal character ":"`)
 		}
 	}
-	password := httpProxy.Password
-	if password != "" {
-		if strings.ContainsAny(password, "\x00") {
-			vctx.Child("password").AddError(`value contains illegal zero byte`)
+
+	var password string
+	var hasPassword bool
+	if httpProxy.Password != nil {
+		hasPassword = true
+		l.validateSecret(vctx.Child("password"), httpProxy.Password)
+		if httpProxy.Password.isValid {
+			if bytes.ContainsAny(httpProxy.Password.Plaintext, "\x00") {
+				vctx.Child("password").AddError(`effective secret value contains illegal zero byte`)
+			}
 		}
 	}
-	if (user != "") != (password != "") {
+	if (user != "") != hasPassword {
 		// git will try to use the git credental helper when setting user but not password, avoid this
-		vctx.AddError(`.user and .password must both be set (to a non-empty string) or neither .user and .password must be set (to a ` +
-			`non-empty string)`)
+		vctx.AddError(`either .user must be set (to a non-empty string) and .password must both be set (to a non-null value) or neither`)
 	}
 	httpProxy.isValid = l.errors.ErrorCount() == n
-	if httpProxy.isValid {
-		if password != "" {
-			httpProxy.URLParsed.User = url.UserPassword(user, password)
-		}
+	if httpProxy.isValid && hasPassword {
+		httpProxy.URLParsed.User = url.UserPassword(user, password)
 	}
 }
 
@@ -296,6 +323,28 @@ func (l *Loader) validateParentProxy(vctx *validateValueContext, parentProxy *Pa
 	})
 	if err != nil {
 		vctx.Child("url").AddErrorf("value is not a valid URL: %v", err)
+	}
+}
+
+func (l *Loader) validatePrivateModules(vctx *validateValueContext, privateModules []*PrivateModulesElement) {
+	pathPrefixes := map[string]int{}
+	for i, privateModulesElement := range privateModules {
+		if privateModulesElement == nil {
+			vctx.Child(i).AddRequiredError()
+		} else {
+			l.validatePrivateModulesElement(vctx.Child(i), privateModulesElement)
+			if privateModulesElement.isValid {
+				for pathPrefix, j := range pathPrefixes {
+					if util.PathIsLexicalDescendant(pathPrefix, privateModulesElement.PathPrefix) ||
+						util.PathIsLexicalDescendant(privateModulesElement.PathPrefix, pathPrefix) {
+						vctx.AddErrorf(`no two elements can have path prefixes that match overlapping sets of paths but `+
+							`the sets of paths matched by [%d].pathPrefix (%#v) and [%d].pathPrefix (%#v) overlap`, j,
+							pathPrefix, i, privateModulesElement.PathPrefix)
+					}
+				}
+				pathPrefixes[privateModulesElement.PathPrefix] = i
+			}
+		}
 	}
 }
 
@@ -321,30 +370,7 @@ func (l *Loader) validatePrivateModulesElement(vctx *validateValueContext, priva
 	privateModulesElement.isValid = n == vctx.ErrorCount()
 }
 
-func (l *Loader) validatePrivateModules(vctx *validateValueContext, privateModules []*PrivateModulesElement) {
-	pathPrefixes := map[string]int{}
-	for i, privateModulesElement := range privateModules {
-		if privateModulesElement == nil {
-			vctx.Child(i).AddRequiredError()
-		} else {
-			l.validatePrivateModulesElement(vctx.Child(i), privateModulesElement)
-			if privateModulesElement.isValid {
-				for pathPrefix, j := range pathPrefixes {
-					if util.PathIsLexicalDescendant(pathPrefix, privateModulesElement.PathPrefix) ||
-						util.PathIsLexicalDescendant(privateModulesElement.PathPrefix, pathPrefix) {
-						vctx.AddErrorf(`no two elements can have path prefixes that match overlapping sets of paths but `+
-							`the sets of paths matched by [%d].pathPrefix (%#v) and [%d].pathPrefix (%#v) overlap`, j,
-							pathPrefix, i, privateModulesElement.PathPrefix)
-					}
-				}
-				pathPrefixes[privateModulesElement.PathPrefix] = i
-			}
-		}
-	}
-}
-
-func (l *Loader) validateRSAPrivateKey(vctx *validateValueContext, s string) *rsa.PrivateKey {
-	bytes := []byte(s)
+func (l *Loader) validateRSAPrivateKey(vctx *validateValueContext, bytes []byte) *rsa.PrivateKey {
 	var firstKey *rsa.PrivateKey
 	i := 0
 	for {
@@ -358,32 +384,32 @@ func (l *Loader) validateRSAPrivateKey(vctx *validateValueContext, s string) *rs
 			if err != nil {
 				keyInterf, err2 := x509.ParsePKCS8PrivateKey(block.Bytes)
 				if err2 != nil {
-					vctx.AddErrorf("value's %s PEM block (type %s) could neither be parsed using x509.ParsePKCS1PrivateKey nor x509.ParsePKCS8PrivateKey",
+					vctx.AddErrorf("effective secret value's %s PEM block (type %s) could neither be parsed using x509.ParsePKCS1PrivateKey nor x509.ParsePKCS8PrivateKey",
 						util.FormatIth(i), block.Type)
 					return nil
 				}
 				var ok bool
 				key, ok = keyInterf.(*rsa.PrivateKey)
 				if !ok {
-					vctx.AddErrorf("value's %s PEM block (type %s)'s data was recognized as a private key but is not an RSA private key",
+					vctx.AddErrorf("effective secret value's %s PEM block (type %s)'s data was recognized as a private key but is not an RSA private key",
 						util.FormatIth(i), block.Type)
 					return nil
 				}
 			}
 			if firstKey != nil {
-				vctx.AddErrorf("value illegally has multiple PEM blocks (%s PEM block has type %s)", util.FormatIth(i), block.Type)
+				vctx.AddErrorf("effective secret value illegally has multiple PEM blocks (%s PEM block has type %s)", util.FormatIth(i), block.Type)
 				return nil
 			} else {
 				firstKey = key
 			}
 		} else {
-			vctx.AddErrorf("value's %s PEM block has an unexpected type %s", util.FormatIth(i), block.Type)
+			vctx.AddErrorf("effective secret value's %s PEM block has an unexpected type %s", util.FormatIth(i), block.Type)
 			return nil
 		}
 		i++
 	}
 	if i == 0 {
-		vctx.AddError("value must have a private key PEM block but value has no valid PEM blocks")
+		vctx.AddError("effective secret value must have a private key PEM block but value has no valid PEM blocks")
 		return nil
 	}
 	return firstKey
@@ -395,6 +421,34 @@ func (l *Loader) validateStorage(vctx *validateValueContext, storage *Storage) {
 	} else {
 		l.validateGCSStorage(vctx.Child("gcs"), storage.GCS)
 	}
+}
+
+func (l *Loader) validateSecret(vctx *validateValueContext, secret *Secret) {
+	n := vctx.ErrorCount()
+	x := 0
+	if secret.EnvVar != nil {
+		x++
+		if value, ok := os.LookupEnv(*secret.EnvVar); !ok {
+			vctx.AddErrorf(`secret is sourced from an environment variable because .env is set to %#v but no environment variable `+
+				`named %#v exists`, *secret.EnvVar, *secret.EnvVar)
+		} else {
+			secret.Plaintext = []byte(value)
+		}
+	}
+	if secret.File != nil {
+		x++
+		file := l.resolveFile(*secret.File)
+		var err error
+		secret.Plaintext, err = ioutil.ReadFile(file)
+		if err != nil {
+			vctx.AddErrorf(`secret is sourced from a file because .file is set to %#v but got unexpected error loading file %#v: %v`,
+				*secret.File, file, err)
+		}
+	}
+	if x != 1 {
+		vctx.AddError("exactly one of .envVar and .file must be set (to a non-null value)")
+	}
+	secret.isValid = vctx.ErrorCount() == n
 }
 
 func (l *Loader) validateSumDatabaseElement(vctx *validateValueContext, sumDBElement *SumDatabaseElement) {

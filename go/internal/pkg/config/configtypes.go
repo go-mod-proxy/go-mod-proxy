@@ -41,7 +41,7 @@ type AccessControlListElement struct {
 
 type AccessTokenAuthenticator struct {
 	Audience   string        `yaml:"audience"`
-	Secret     string        `yaml:"secret"`
+	Secret     *Secret       `yaml:"secret"`
 	TimeToLive time.Duration `yaml:"timeToLive"`
 }
 
@@ -82,7 +82,7 @@ type GCSStorage struct {
 
 type GitHubApp struct {
 	ID               int64           `yaml:"id"`
-	PrivateKey       string          `yaml:"privateKey"`
+	PrivateKey       *Secret         `yaml:"privateKey"`
 	PrivateKeyParsed *rsa.PrivateKey `yaml:"-"`
 }
 
@@ -99,13 +99,13 @@ type HTTPProxy struct {
 	URL           string                     `yaml:"url"`
 	URLParsed     *url.URL                   `yaml:"-"`
 	User          string                     `yaml:"user"`
-	Password      string                     `yaml:"password"`
+	Password      *Secret                    `yaml:"password"`
 }
 
 type Identity struct {
 	Name                       string                      `yaml:"name"`
 	GCEInstanceIdentityBinding *GCEInstanceIdentityBinding `yaml:"gceInstanceIdentityBinding"`
-	Password                   *string                     `yaml:"password"`
+	Password                   *Secret                     `yaml:"password"`
 }
 
 type ModuleRewriteRule struct {
@@ -131,6 +131,13 @@ type PrivateModulesElementAuth struct {
 
 type PublicModules struct {
 	SumDatabase *SumDatabaseElement `yaml:"sumDatabase"`
+}
+
+type Secret struct {
+	EnvVar    *string `yaml:"envVar"`
+	File      *string `yaml:"file"`
+	isValid   bool    `yaml:"-"`
+	Plaintext []byte  `yaml:"-"`
 }
 
 type Storage struct {

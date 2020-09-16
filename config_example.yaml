@@ -5,11 +5,18 @@ gitHub:
   - host: github.com
     gitHubApps:
       - id: 12345
-        privateKey: |
-          -----BEGIN RSA PRIVATE KEY-----
-          ... private key of GitHub App here
-          -----END RSA PRIVATE KEY-----
+        privateKey:
+          # The contents of file must encode a single PEM block with a private key type (i.e. "-----BEGIN RSA PRIVATE KEY-----")
+          # that is the GitHub App private key.
+          file: private-key.txt
+          
+          # This secret can alternatively be sourced from an environment variable
+          # by setting the envVar to the name of the environment variable:
+          # envVar: MY_GITHUB_APP_PRIVATE_KEY
+          # The value of the environment variable must encode a single PEM block with a private key type (i.e. "-----BEGIN RSA PRIVATE KEY-----")
+          # that is the GitHub App private key.
 
+          # Exactly one of file or envVar must be set to a non-null value.
 httpProxy:
   # localhost and loopback IP addresses are implicitly added to the HTTP forward proxy bypass list,
   # but are included for illustration.
@@ -19,7 +26,14 @@ httpProxy:
   # Optional user and password used to encode in the Proxy-Authorization HTTP header using the Basic scheme.
   # NOTE: only basic authentication to HTTP proxies is supported.
   user: proxyBasicAuthUser
-  password: proxyBasicAuthPassword
+  password:
+    file: http-proxy-password.txt
+    
+    # This secret can alternatively be sourced from an environment variable
+    # by setting the envVar to the name of the environment variable:
+    # envVar: HTTP_PROXY_PASSWORD
+
+    # Exactly one of file or envVar must be set to a non-null value.
   
 # Controls the maximum amount of Go child processes that can be running at any one time
 maxChildProcesses: 30
