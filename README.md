@@ -1,4 +1,5 @@
 ![CI](https://github.com/go-mod-proxy/go-mod-proxy/workflows/ci/badge.svg)
+![Docker Hub](https://img.shields.io/docker/image-size/jbrekelmans/go-module-proxy?sort=date)
 
 # Introduction
 A Go module proxy that:
