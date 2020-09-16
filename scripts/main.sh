@@ -91,7 +91,7 @@ main() {
     run-go)
       run-go
       ;;
-    test)
+    run-go-tests)
       curl --fail \
         -v \
         -H 'Content-Type: application/json' \

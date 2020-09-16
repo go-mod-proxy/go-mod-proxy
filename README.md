@@ -15,7 +15,6 @@ A Go module proxy that:
 | [Athens](https://docs.gomods.io/) | Athens [documents](https://docs.gomods.io/configuration/authentication/) how to setup authentication for all (if not most) Version Control Systems, but does not encapsulate it | Supports GCS and much more | No | No | [3.3k stars](https://github.com/gomods/athens) | No |
 | [goproxy.io](https://github.com/goproxyio/goproxy) | Supported, but does not encapsulate or document | File system | No | No | [4.3k stars](https://github.com/goproxyio/goproxy) | - |
 
-
 # Strong consistency
 The `.info`, `.zip` and `.mod` endpoints are strongly consistent. More formally:
 1. Given a copy of a module version `<m>@<v>`: `.info`, `.zip` and `.mod` as reported by GET `<m>/v@/<v>.info`, `<m>/v@/<v>.zip` and `<m>/v@/<v>.mod` requests, respectively, reflect that copy and at no point (in the future) will GET `<m>/v@/<v>.info`, `<m>/v@/<v>.zip` and `<m>/v@/<v>.mod` requests reflect a different copy.

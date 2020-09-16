@@ -33,7 +33,7 @@ func (s *Server) authenticateUserPassword(w http.ResponseWriter, req *http.Reque
 		return
 	}
 	if authenticatedIdentity.Password == nil ||
-		subtle.ConstantTimeCompare([]byte(*authenticatedIdentity.Password), []byte(reqBody.Password)) == 0 {
+		subtle.ConstantTimeCompare(authenticatedIdentity.Password.Plaintext, []byte(reqBody.Password)) == 0 {
 		responseUnauthorized(w, s.realm)
 		return
 	}
