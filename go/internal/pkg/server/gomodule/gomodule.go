@@ -41,7 +41,6 @@ type ServerOptions struct {
 	AccessControlList    []*config.AccessControlListElement
 	ClientAuthEnabled    bool
 	GoModuleService      servicegomodule.Service
-	ModuleRewriteRules   []*config.ModuleRewriteRule
 	RequestAuthenticator common.RequestAuthenticatorFunc
 	// UseEncodedPath must have been called on Router.
 	Router *mux.Router
@@ -51,7 +50,6 @@ type ServerOptions struct {
 type Server struct {
 	acl                  []*config.AccessControlListElement
 	clientAuthEnabled    bool
-	moduleRewriteRules   []*config.ModuleRewriteRule
 	goModuleService      servicegomodule.Service
 	requestAuthenticator common.RequestAuthenticatorFunc
 	router               *mux.Router
@@ -68,24 +66,12 @@ func NewServer(opts ServerOptions) (*Server, error) {
 	s := &Server{
 		acl:                  opts.AccessControlList,
 		clientAuthEnabled:    opts.ClientAuthEnabled,
-		moduleRewriteRules:   opts.ModuleRewriteRules,
 		goModuleService:      opts.GoModuleService,
 		requestAuthenticator: opts.RequestAuthenticator,
 		router:               opts.Router,
 	}
 	s.router.PathPrefix("/").Methods(http.MethodGet).Handler(s)
 	return s, nil
-}
-
-func (s *Server) applyRewriteRules(modulePath string) string {
-	for _, rule := range s.moduleRewriteRules {
-		match := rule.Regexp.Value.FindStringSubmatchIndex(modulePath)
-		if match != nil {
-			modulePathRewritten := rule.Regexp.Value.ExpandString(nil, rule.Replacement, modulePath, match)
-			return string(modulePathRewritten)
-		}
-	}
-	return modulePath
 }
 
 func (s *Server) authorize(identity *auth.Identity, modulePath string) config.Access {
@@ -231,7 +217,6 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		if identity == nil {
 			return
 		}
-		modulePath = s.applyRewriteRules(modulePath)
 		access := s.authorize(identity, modulePath)
 		if access == config.AccessDeny {
 			http.Error(w, "module does not exist, that's all we know.", http.StatusNotFound)

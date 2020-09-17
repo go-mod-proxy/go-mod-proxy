@@ -27,7 +27,6 @@ type ServerOptions struct {
 	ClientAuthEnabled        bool
 	GoModuleService          servicegomodule.Service
 	IdentityStore            serviceauth.IdentityStore
-	ModuleRewriteRules       []*config.ModuleRewriteRule
 	Realm                    string
 	SumDatabaseProxy         *config.SumDatabaseProxy
 	Transport                http.RoundTripper
@@ -102,7 +101,6 @@ func NewServer(opts ServerOptions) (*Server, error) {
 		AccessControlList:    opts.AccessControlList,
 		ClientAuthEnabled:    opts.ClientAuthEnabled,
 		GoModuleService:      opts.GoModuleService,
-		ModuleRewriteRules:   opts.ModuleRewriteRules,
 		RequestAuthenticator: accessTokenAuthenticatorFunc,
 		Router:               s.router,
 	})
