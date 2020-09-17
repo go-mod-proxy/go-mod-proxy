@@ -154,13 +154,6 @@ func (l *Loader) validateConfig(vctx *validateValueContext, cfg *Config) {
 	} else if cfg.MaxChildProcesses < 0 {
 		vctx.Child("maxChildProcesses").AddErrorf("value must not be negative")
 	}
-
-	vctxModuleRewriteRules := vctx.Child("moduleRewriteRules")
-	for i, moduleRewriteRule := range l.cfg.ModuleRewriteRules {
-		if moduleRewriteRule == nil {
-			vctxModuleRewriteRules.Child(i).AddRequiredError()
-		}
-	}
 	if l.cfg.ParentProxy != nil {
 		l.validateParentProxy(vctx.Child("parentProxy"), l.cfg.ParentProxy)
 	}

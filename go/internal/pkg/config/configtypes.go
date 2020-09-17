@@ -56,16 +56,15 @@ type ClientAuth struct {
 }
 
 type Config struct {
-	ClientAuth         ClientAuth               `yaml:"clientAuth"`
-	GitHub             []*GitHubInstance        `yaml:"gitHub"`
-	HTTPProxy          *HTTPProxy               `yaml:"httpProxy"`
-	MaxChildProcesses  int                      `yaml:"maxChildProcesses"`
-	ModuleRewriteRules []*ModuleRewriteRule     `yaml:"moduleRewriteRules"`
-	ParentProxy        *ParentProxy             `yaml:"parentProxy"`
-	PrivateModules     []*PrivateModulesElement `yaml:"privateModules"`
-	PublicModules      PublicModules            `yaml:"publicModules"`
-	Storage            *Storage                 `yaml:"storage"`
-	SumDatabaseProxy   *SumDatabaseProxy        `yaml:"sumDatabaseProxy"`
+	ClientAuth        ClientAuth               `yaml:"clientAuth"`
+	GitHub            []*GitHubInstance        `yaml:"gitHub"`
+	HTTPProxy         *HTTPProxy               `yaml:"httpProxy"`
+	MaxChildProcesses int                      `yaml:"maxChildProcesses"`
+	ParentProxy       *ParentProxy             `yaml:"parentProxy"`
+	PrivateModules    []*PrivateModulesElement `yaml:"privateModules"`
+	PublicModules     PublicModules            `yaml:"publicModules"`
+	Storage           *Storage                 `yaml:"storage"`
+	SumDatabaseProxy  *SumDatabaseProxy        `yaml:"sumDatabaseProxy"`
 }
 
 type GCEInstanceIdentityAuthenticator struct {
@@ -106,11 +105,6 @@ type Identity struct {
 	Name                       string                      `yaml:"name"`
 	GCEInstanceIdentityBinding *GCEInstanceIdentityBinding `yaml:"gceInstanceIdentityBinding"`
 	Password                   *Secret                     `yaml:"password"`
-}
-
-type ModuleRewriteRule struct {
-	Regexp      Regexp `yaml:"regexp"`
-	Replacement string `yaml:"replacement"`
 }
 
 type ParentProxy struct {
