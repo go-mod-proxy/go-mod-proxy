@@ -594,6 +594,15 @@ func (s *Service) List(ctx context.Context, modulePath string) (d io.ReadCloser,
 	if err != nil {
 		return
 	}
+	logger := log.StandardLogger()
+	if logLevel := log.TraceLevel; logger.IsLevelEnabled(logLevel) {
+		var sb strings.Builder
+		fmt.Fprintf(&sb, "list for module path %#v initialized with GCS versions: ", modulePath)
+		for version := range versionMap {
+			fmt.Fprintf(&sb, "%#v, ", version)
+		}
+		log.NewEntry(logger).Logf(logLevel, sb.String())
+	}
 	tempGoEnv, err := s.newTempGoEnv()
 	if err != nil {
 		return
