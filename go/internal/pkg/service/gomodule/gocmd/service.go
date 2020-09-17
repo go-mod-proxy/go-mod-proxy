@@ -272,6 +272,10 @@ func (s *Service) getGoModuleAndIndexIfNeeded(ctx context.Context, tempGoEnv *te
 }
 
 func (s *Service) GoMod(ctx context.Context, moduleVersion *module.Version) (data io.ReadCloser, err error) {
+	err = s.notFoundOptimizations(moduleVersion.Path)
+	if err != nil {
+		return
+	}
 	if moduleVersion.Version == "latest" {
 		err = gomoduleservice.NewErrorf(gomoduleservice.NotFound, `module version "latest" is invalid`)
 		return
@@ -357,6 +361,10 @@ func (s *Service) goModFromConcatObj(ctx context.Context, moduleVersion *module.
 }
 
 func (s *Service) Info(ctx context.Context, moduleVersion *module.Version) (info *gomoduleservice.Info, err error) {
+	err = s.notFoundOptimizations(moduleVersion.Path)
+	if err != nil {
+		return
+	}
 	if moduleVersion.Version == "latest" {
 		err = gomoduleservice.NewErrorf(gomoduleservice.NotFound, `module version "latest" is invalid`)
 		return
@@ -542,6 +550,10 @@ func (s *Service) initializeTempGoEnvForModule(ctx context.Context, tempGoEnv *t
 }
 
 func (s *Service) Latest(ctx context.Context, modulePath string) (info *gomoduleservice.Info, err error) {
+	err = s.notFoundOptimizations(modulePath)
+	if err != nil {
+		return
+	}
 	tempGoEnv, err := s.newTempGoEnv()
 	if err != nil {
 		return
@@ -585,6 +597,10 @@ func (s *Service) Latest(ctx context.Context, modulePath string) (info *gomodule
 }
 
 func (s *Service) List(ctx context.Context, modulePath string) (d io.ReadCloser, err error) {
+	err = s.notFoundOptimizations(modulePath)
+	if err != nil {
+		return
+	}
 	versionMap := map[string]struct{}{}
 	err = s.listAddObjectNames(ctx, storageGoModObjNamePrefix+modulePath+"@", versionMap)
 	if err != nil {
@@ -593,6 +609,15 @@ func (s *Service) List(ctx context.Context, modulePath string) (d io.ReadCloser,
 	err = s.listAddObjectNames(ctx, storageConcatObjNamePrefix+modulePath+"@", versionMap)
 	if err != nil {
 		return
+	}
+	logger := log.StandardLogger()
+	if logLevel := log.TraceLevel; logger.IsLevelEnabled(logLevel) {
+		var sb strings.Builder
+		fmt.Fprintf(&sb, "list for module path %#v initialized with GCS versions: ", modulePath)
+		for version := range versionMap {
+			fmt.Fprintf(&sb, "%#v, ", version)
+		}
+		log.NewEntry(logger).Logf(logLevel, sb.String())
 	}
 	tempGoEnv, err := s.newTempGoEnv()
 	if err != nil {
@@ -716,7 +741,37 @@ func (s *Service) newTempGoEnv() (*tempGoEnv, error) {
 	return newTempGoEnv(s.scratchDir, s.tempGoEnvBaseEnviron)
 }
 
+func (s *Service) notFoundOptimizations(modulePath string) (err error) {
+	i := strings.IndexByte(modulePath, '/')
+	var host string
+	if i >= 0 {
+		host = modulePath[:i]
+	} else {
+		host = modulePath
+	}
+	switch host {
+	case "github.com":
+		if i >= 0 {
+			j := strings.IndexByte(modulePath[i+1:], '/') + i + 1
+			if j > i {
+				// Two or more slashes
+				return
+			}
+			// One slash
+		} else {
+			// No slashes
+		}
+		err = gomoduleservice.NewErrorf(gomoduleservice.NotFound, `invalid github.com import path %#v`, modulePath)
+		return
+	}
+	return
+}
+
 func (s *Service) Zip(ctx context.Context, moduleVersion *module.Version) (data io.ReadCloser, err error) {
+	err = s.notFoundOptimizations(moduleVersion.Path)
+	if err != nil {
+		return
+	}
 	if moduleVersion.Version == "latest" {
 		err = gomoduleservice.NewErrorf(gomoduleservice.NotFound, `module version "latest" is invalid`)
 		return

@@ -107,7 +107,7 @@ func (g *GitHubClientManager) ensureGitHubAppInstallations(ctx context.Context, 
 					Transport: newInstallation.transport,
 				})
 			}
-			log.Debugf("got inistallation %d of repoOwner %#v", id, repoOwner)
+			log.Debugf("got installation %d of repoOwner %#v", id, repoOwner)
 			newInstallations[repoOwner] = newInstallation
 		}
 		logger := log.StandardLogger()
