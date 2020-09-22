@@ -76,7 +76,8 @@ type GCEInstanceIdentityBinding struct {
 }
 
 type GCSStorage struct {
-	Bucket string `yaml:"bucket"`
+	BypassHTTPProxy bool   `yaml:"bypassHTTPProxy"`
+	Bucket          string `yaml:"bucket"`
 }
 
 type GitHubApp struct {
