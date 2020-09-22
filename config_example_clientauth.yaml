@@ -127,7 +127,7 @@ storage:
     # to go via the HTTP proxy, but requests to https://storage.googleapis.com/ as part of this storage backend must not
     # go via the HTTP proxy.
     # bypassHTTPProxy should be set to false if and only if this module proxy server is not running in a VPCSC-enabled GCP project and
-    # requests to https://storage.googleapis.com/ should go via the HTTP proxy.
+    # requests to https://storage.googleapis.com/ done by the storage layer should go via the HTTP proxy.
     bypassHTTPProxy: true
     bucket: my-gcs-bucket
 
