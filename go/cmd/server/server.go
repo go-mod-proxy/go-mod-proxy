@@ -87,6 +87,7 @@ func Run(ctx context.Context, opts *CLI) error {
 	}
 	var googleCredentials *google.Credentials
 	var googleHTTPClient *http.Client
+	var googleHTTPClientBypassHTTPProxy *http.Client
 	if enableGCEAuth || cfg.Storage.GCS != nil {
 		googleCredentials, err = google.FindDefaultCredentials(ctx, "https://www.googleapis.com/auth/cloud-platform")
 		if err != nil {
@@ -95,17 +96,22 @@ func Run(ctx context.Context, opts *CLI) error {
 		googleHTTPClient = oauth2.NewClient(nil, googleCredentials.TokenSource)
 		// A slightly hacky way to reuse httpClient's Transport instead of having another one.
 		googleHTTPClient.Transport.(*oauth2.Transport).Base = httpClient.Transport
+		googleHTTPClientBypassHTTPProxy = oauth2.NewClient(nil, googleCredentials.TokenSource)
 	}
 	var storage servicestorage.Storage
 	if cfg.Storage.GCS != nil {
-		gcsClient, err := gcs.NewClient(ctx, option.WithHTTPClient(googleHTTPClient))
+		storageHTTPClient := googleHTTPClient
+		if cfg.Storage.GCS.BypassHTTPProxy {
+			storageHTTPClient = googleHTTPClientBypassHTTPProxy
+		}
+		gcsClient, err := gcs.NewClient(ctx, option.WithHTTPClient(storageHTTPClient))
 		if err != nil {
 			return err
 		}
 		storage, err = servicestoragegcs.NewStorage(servicestoragegcs.StorageOptions{
 			Bucket:     cfg.Storage.GCS.Bucket,
 			GCSClient:  gcsClient,
-			HTTPClient: googleHTTPClient,
+			HTTPClient: storageHTTPClient,
 		})
 		if err != nil {
 			return err
