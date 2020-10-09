@@ -75,7 +75,7 @@ func (s *Server) serveHTTP(w http.ResponseWriter, req *http.Request) {
 		sumDBName = escapedPathSuffix[:i]
 		escapedPathSuffix = escapedPathSuffix[i+1:]
 	}
-	log.Tracef("%s %s (sum database = %#v)", req.Method, req.URL.String(), sumDBName)
+	log.Tracef("%s %s (sum database = %#v, escapedPathSuffix = %#v)", req.Method, req.URL.String(), sumDBName, escapedPathSuffix)
 	reverseProxy := s.sumdbs[sumDBName]
 	if reverseProxy == nil {
 		w.WriteHeader(http.StatusNotFound)
