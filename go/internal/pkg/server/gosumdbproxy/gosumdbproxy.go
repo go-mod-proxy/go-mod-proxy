@@ -70,6 +70,7 @@ func (s *Server) serveHTTP(w http.ResponseWriter, req *http.Request) {
 		w.WriteHeader(http.StatusGone)
 		return
 	}
+	log.Tracef("%s %s (escapedPathSuffix = %#v)", req.Method, req.URL.String(), escapedPathSuffix)
 	sumDBName := escapedPathSuffix
 	if i := strings.IndexByte(escapedPathSuffix, '/'); i >= 0 {
 		sumDBName = escapedPathSuffix[:i]
