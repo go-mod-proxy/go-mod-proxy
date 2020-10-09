@@ -54,7 +54,7 @@ func NewServer(opts ServerOptions) (*Server, error) {
 		// information
 		s.sumdbs[sumDBElement.Name] = reverseProxy
 	}
-	opts.ParentRouter.PathPrefix("/sumdb/{x}").Methods(http.MethodGet).HandlerFunc(s.serveHTTP)
+	opts.ParentRouter.PathPrefix("/sumdb/{x:.*}").Methods(http.MethodGet).HandlerFunc(s.serveHTTP)
 	return s, nil
 }
 
