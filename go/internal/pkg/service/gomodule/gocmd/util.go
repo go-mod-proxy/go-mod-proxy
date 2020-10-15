@@ -32,8 +32,8 @@ func fdSeekToStart(fd *os.File) error {
 	return nil
 }
 
-// looksLikeGoogleVirtualPrivateCloudError is tests if errorString ends with something like:
-// : reading https://proxy.golang.org/google.golang.org/api/@v/v0.8.0.zip: 403 Forbidden
+// looksLikeGoogleVirtualPrivateCloudError tests if errorString ends with something like:
+// "reading https://proxy.golang.org/google.golang.org/api/@v/v0.8.0.zip: 403 Forbidden"
 func looksLikeGoogleVirtualPrivateCloudError(errorString string) bool {
 	rest := errorString
 	i := strings.LastIndexByte(rest, ':')
