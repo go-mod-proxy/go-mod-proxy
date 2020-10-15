@@ -192,6 +192,10 @@ func (s *Service) getGoModuleAndIndexIfNeeded(ctx context.Context, tempGoEnv *te
 		return
 	}
 	if downloadInfo.Error != nil {
+		if looksLikeGoogleVirtualPrivateCloudError(downloadInfo.Error.Err) {
+			err = gomoduleservice.NewErrorf(gomoduleservice.ParentProxyGoogleVPCError, "parent proxy Google Virtual Private Cloud Service Controls error: %s", downloadInfo.Error)
+			return
+		}
 		err = fmt.Errorf("command %s succeeded but got unexpected error loading module:\n%s", formatArgs(args), strLog)
 		return
 	}

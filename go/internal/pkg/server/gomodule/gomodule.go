@@ -98,18 +98,18 @@ func (s *Server) authorize(identity *auth.Identity, modulePath string) config.Ac
 func (s *Server) latest(rw http.ResponseWriter, req *http.Request, modulePath string) {
 	info, err := s.goModuleService.Latest(req.Context(), modulePath)
 	if err != nil {
-		if servicegomodule.ErrorIsCode(err, servicegomodule.NotFound) {
+		if servicegomodule.ErrorIsCode(err, servicegomodule.NotFound) || servicegomodule.ErrorIsCode(err, servicegomodule.ParentProxyGoogleVPCError) {
 			http.Error(rw, fmt.Sprintf("not found: %v", err), http.StatusNotFound)
 			return
 		}
 		log.Errorf("error getting info for latest version of module %s: %v", modulePath, err)
-		http.Error(rw, fmt.Sprintf("error while getting info for latest version of module %s", modulePath), http.StatusInternalServerError)
+		http.Error(rw, fmt.Sprintf("not found: error while getting info for latest version of module %s", modulePath), http.StatusNotFound)
 		return
 	}
 	infoJSONBytes, err := json.Marshal(info)
 	if err != nil {
 		log.Errorf("error marshalling info of latest version of module %s: %v", modulePath, err)
-		http.Error(rw, fmt.Sprintf("error marshalling info of latest version of module %s", modulePath), http.StatusInternalServerError)
+		http.Error(rw, fmt.Sprintf("error marshalling info of latest version of module %s", modulePath), http.StatusNotFound)
 		return
 	}
 	rw.Header().Set(headerNameContentType, contentTypeInfo)
@@ -120,12 +120,12 @@ func (s *Server) latest(rw http.ResponseWriter, req *http.Request, modulePath st
 func (s *Server) list(rw http.ResponseWriter, req *http.Request, modulePath string) {
 	d, err := s.goModuleService.List(req.Context(), modulePath)
 	if err != nil {
-		if servicegomodule.ErrorIsCode(err, servicegomodule.NotFound) {
+		if servicegomodule.ErrorIsCode(err, servicegomodule.NotFound) || servicegomodule.ErrorIsCode(err, servicegomodule.ParentProxyGoogleVPCError) {
 			http.Error(rw, fmt.Sprintf("not found: %v", err), http.StatusNotFound)
 			return
 		}
 		log.Errorf("error listing versions of module %s: %v", modulePath, err)
-		http.Error(rw, fmt.Sprintf("error listing versions of module %s", modulePath), http.StatusInternalServerError)
+		http.Error(rw, fmt.Sprintf("error listing versions of module %s", modulePath), http.StatusNotFound)
 		return
 	}
 	defer func() {
@@ -147,18 +147,18 @@ func (s *Server) info(rw http.ResponseWriter, req *http.Request, modulePath, ver
 	moduleVersion := module.Version{Path: modulePath, Version: version}
 	info, err := s.goModuleService.Info(req.Context(), &moduleVersion)
 	if err != nil {
-		if servicegomodule.ErrorIsCode(err, servicegomodule.NotFound) {
+		if servicegomodule.ErrorIsCode(err, servicegomodule.NotFound) || servicegomodule.ErrorIsCode(err, servicegomodule.ParentProxyGoogleVPCError) {
 			http.Error(rw, fmt.Sprintf("not found: %v", err), http.StatusNotFound)
 			return
 		}
 		log.Errorf("error getting info for module %s: %v", moduleVersion.String(), err)
-		http.Error(rw, fmt.Sprintf("error while getting info for module %s", moduleVersion.String()), http.StatusInternalServerError)
+		http.Error(rw, fmt.Sprintf("error while getting info for module %s", moduleVersion.String()), http.StatusNotFound)
 		return
 	}
 	infoJSONBytes, err := json.Marshal(info)
 	if err != nil {
 		log.Errorf("error marshalling info of latest version of module %s: %v", modulePath, err)
-		http.Error(rw, fmt.Sprintf("error marshalling info of latest version of module %s", modulePath), http.StatusInternalServerError)
+		http.Error(rw, fmt.Sprintf("error marshalling info of latest version of module %s", modulePath), http.StatusNotFound)
 		return
 	}
 	rw.Header().Set(headerNameContentType, contentTypeInfo)
@@ -174,12 +174,12 @@ func (s *Server) goMod(rw http.ResponseWriter, req *http.Request, modulePath, ve
 	moduleVersion := module.Version{Path: modulePath, Version: version}
 	d, err := s.goModuleService.GoMod(req.Context(), &moduleVersion)
 	if err != nil {
-		if servicegomodule.ErrorIsCode(err, servicegomodule.NotFound) {
+		if servicegomodule.ErrorIsCode(err, servicegomodule.NotFound) || servicegomodule.ErrorIsCode(err, servicegomodule.ParentProxyGoogleVPCError) {
 			http.Error(rw, fmt.Sprintf("not found: %v", err), http.StatusNotFound)
 			return
 		}
 		log.Errorf("error getting mod file for module %s: %v", moduleVersion.String(), err)
-		http.Error(rw, fmt.Sprintf("error while getting mod file for module %s", moduleVersion.String()), http.StatusInternalServerError)
+		http.Error(rw, fmt.Sprintf("error while getting mod file for module %s", moduleVersion.String()), http.StatusNotFound)
 		return
 	}
 	defer func() {
@@ -269,13 +269,12 @@ func (s *Server) zip(rw http.ResponseWriter, req *http.Request, modulePath, vers
 	moduleVersion := module.Version{Path: modulePath, Version: version}
 	d, err := s.goModuleService.Zip(req.Context(), &moduleVersion)
 	if err != nil {
-		if servicegomodule.ErrorIsCode(err, servicegomodule.NotFound) {
-			code := http.StatusNotFound
-			http.Error(rw, http.StatusText(code), code)
+		if servicegomodule.ErrorIsCode(err, servicegomodule.NotFound) || servicegomodule.ErrorIsCode(err, servicegomodule.ParentProxyGoogleVPCError) {
+			http.Error(rw, fmt.Sprintf("not found: %v", err), http.StatusNotFound)
 			return
 		}
 		log.Errorf("error getting zip file for module %s: %v", moduleVersion.String(), err)
-		http.Error(rw, fmt.Sprintf("error getting zip file for module %s", moduleVersion.String()), http.StatusInternalServerError)
+		http.Error(rw, fmt.Sprintf("error getting zip file for module %s", moduleVersion.String()), http.StatusNotFound)
 		return
 	}
 	defer func() {
