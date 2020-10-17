@@ -45,17 +45,22 @@ func NewServer(opts ServerOptions) (*Server, error) {
 			return nil, fmt.Errorf("opts.SumDatabaseProxy.SumDatabases[%d].URLParsed.Fragment must be empty", i)
 		}
 		reverseProxy := httputil.NewSingleHostReverseProxy(sumDBElement.URLParsed)
+		reverseProxy.ModifyResponse = s.reverseProxyModifyResponse
 		reverseProxy.Transport = opts.Transport
 		// TODO set reverseProxy.BufferPool to improve buffer sharing
 		// TODO set reverseProxy.ErrorLog to log to logrus
-
-		// reverseProxy does not retain URL path encoding
-		// TODO use a reverse proxy that retains URL path encoding because in general it is better for reverse proxies to preserve
-		// information
 		s.sumdbs[sumDBElement.Name] = reverseProxy
 	}
 	opts.ParentRouter.PathPrefix("/sumdb/{x:.*}").Methods(http.MethodGet).HandlerFunc(s.serveHTTP)
 	return s, nil
+}
+
+func (s *Server) reverseProxyModifyResponse(res *http.Response) error {
+	if log.IsLevelEnabled(log.TraceLevel) {
+		req := res.Request
+		log.Tracef("sumdb proxy: sumdb responded to %s %s with status %d", req.Method, req.URL.String(), res.StatusCode)
+	}
+	return nil
 }
 
 func (s *Server) serveHTTP(w http.ResponseWriter, req *http.Request) {
@@ -73,20 +78,37 @@ func (s *Server) serveHTTP(w http.ResponseWriter, req *http.Request) {
 	sumDBName := escapedPathSuffix
 	if i := strings.IndexByte(escapedPathSuffix, '/'); i >= 0 {
 		sumDBName = escapedPathSuffix[:i]
-		escapedPathSuffix = escapedPathSuffix[i+1:]
+		escapedPathSuffix = escapedPathSuffix[i:]
+	} else {
+		escapedPathSuffix = ""
 	}
-	log.Tracef("%s %s (sum database = %#v)", req.Method, req.URL.String(), sumDBName)
 	reverseProxy := s.sumdbs[sumDBName]
 	if reverseProxy == nil {
-		w.WriteHeader(http.StatusNotFound)
+		status := http.StatusNotFound
+		log.Tracef("responding to %s %s (sum database = %#v) with status %d because the sum database is unknown", req.Method, req.URL.String(),
+			sumDBName, status)
+		w.WriteHeader(status)
 		return
 	}
-	if escapedPathSuffix == "supported" {
-		w.WriteHeader(http.StatusOK)
+	if escapedPathSuffix == "/supported" {
+		status := http.StatusOK
+		log.Tracef("responding to %s %s (sum database = %#v) with status %d", req.Method, req.URL.String(),
+			sumDBName, status)
+		w.WriteHeader(status)
 		return
 	}
 	reqClone := req.Clone(req.Context())
-	reqClone.URL.Path = url.PathEscape(escapedPathSuffix)
-	reqClone.URL.RawPath = ""
+	// We only have to modify the path of reqClone.URL because reverseProxy.Director does the rest.
+	pathSuffix, err := url.PathUnescape(escapedPathSuffix)
+	if err != nil {
+		status := http.StatusNotFound
+		log.Tracef("responding to %s %s (sum database = %#v) with status %d due to error unescaping path suffix: %v", req.Method, req.URL.String(),
+			sumDBName, status, err)
+		w.WriteHeader(status)
+		return
+	}
+	log.Tracef("%s %s (sum database = %#v)", req.Method, req.URL.String(), sumDBName)
+	reqClone.URL.Path = pathSuffix
+	reqClone.URL.RawPath = escapedPathSuffix
 	reverseProxy.ServeHTTP(w, reqClone)
 }
