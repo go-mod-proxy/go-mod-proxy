@@ -425,16 +425,18 @@ func (s *Service) infoFromConcatObj(ctx context.Context, moduleVersion *module.V
 				}
 			}
 		}()
-		commitTime, _, _, _, err := parseConcatObjCommon(data)
+		var commitTime time.Time
+		commitTime, _, _, _, err = parseConcatObjCommon(data)
 		if err != nil {
-			return nil, fmt.Errorf("error parsing concat obj's data: %w", err)
+			err = fmt.Errorf("error parsing concat obj's data: %w", err)
+			return
 		}
-		return &gomoduleservice.Info{
+		i = &gomoduleservice.Info{
 			Time:    commitTime,
 			Version: moduleVersion.Version,
-		}, nil
+		}
 	}
-	return nil, err
+	return
 }
 
 func (s *Service) infoFromGoModObj(ctx context.Context, moduleVersion *module.Version) (*gomoduleservice.Info, error) {
