@@ -412,9 +412,19 @@ func (s *Service) Info(ctx context.Context, moduleVersion *module.Version) (info
 	return
 }
 
-func (s *Service) infoFromConcatObj(ctx context.Context, moduleVersion *module.Version) (*gomoduleservice.Info, error) {
+func (s *Service) infoFromConcatObj(ctx context.Context, moduleVersion *module.Version) (i *gomoduleservice.Info, err error) {
 	data, err := s.storage.GetObject(ctx, storageConcatObjNamePrefix+moduleVersion.Path+"@"+moduleVersion.Version)
 	if err == nil {
+		defer func() {
+			err2 := data.Close()
+			if err2 != nil {
+				if err == nil {
+					err = err2
+				} else {
+					log.Errorf("error closing reader of concat obj:  %v", err)
+				}
+			}
+		}()
 		commitTime, _, _, _, err := parseConcatObjCommon(data)
 		if err != nil {
 			return nil, fmt.Errorf("error parsing concat obj's data: %w", err)

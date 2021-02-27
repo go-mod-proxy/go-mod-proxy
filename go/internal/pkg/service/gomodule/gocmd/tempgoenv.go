@@ -39,7 +39,6 @@ func getTempGoEnvBaseEnviron() *util.Environ {
 	// We set GIT_CONFIG_NOSYSTEM to have less interference of environment.
 	environ.Set("GIT_CONFIG_NOSYSTEM", "1")
 	environ.Set("GIT_TERMINAL_PROMPT", "0")
-	// Set HOME to override git's user configuration file (for both Windows and other OS).
 	environ.Set("GO111MODULE", "on")
 	environ.Set("GOFLAGS", "-mod=mod")
 	return environ
