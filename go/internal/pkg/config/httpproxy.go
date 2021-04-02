@@ -136,15 +136,16 @@ func GetHTTPProxyInfoAndUnsetEnviron(cfg *Config) (*HTTPProxyInfo, error) {
 	} else {
 		log.Infof(`effective source of HTTP forward proxy bypass ("NO_PROXY"): %s`, noProxySource)
 	}
-	proxyURLString := proxyURL.String()
-	proxyFunc, err := internalhttpproxy.ProxyFunc(noProxy, proxyURLString)
-	if err != nil {
-		return nil, err
-	}
 	h := &HTTPProxyInfo{
-		ProxyFunc:         proxyFunc,
-		LibcurlNoProxy:    libcurlNoProxy,
-		LibcurlHTTPSProxy: proxyURLString,
+		LibcurlNoProxy: libcurlNoProxy,
+	}
+	if proxyURL != nil {
+		h.LibcurlHTTPSProxy = proxyURL.String()
+		var err error
+		h.ProxyFunc, err = internalhttpproxy.ProxyFunc(noProxy, h.LibcurlHTTPSProxy)
+		if err != nil {
+			return nil, err
+		}
 	}
 	return h, nil
 }

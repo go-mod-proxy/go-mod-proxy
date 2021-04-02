@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"net/http"
 	"net/url"
 	"os/exec"
 	"path/filepath"
@@ -52,6 +53,7 @@ type goModuleInfo struct {
 type ServiceOptions struct {
 	GitCredentialHelperShell string
 	HTTPProxyInfo            *config.HTTPProxyInfo
+	HTTPTransport            http.RoundTripper
 	MaxParallelCommands      int
 	ParentProxy              *url.URL
 	PrivateModules           []*config.PrivateModulesElement
@@ -64,7 +66,9 @@ type Service struct {
 	envGoProxy                 string
 	gitCredentialHelperShell   string
 	goBinFile                  string
+	httpClient                 *http.Client
 	httpProxyInfo              *config.HTTPProxyInfo
+	parentProxyURL             string
 	privateModules             []*config.PrivateModulesElement
 	publicModulesGoSumDBEnvVar string
 	runCmdResourcePool         *maxParallelismResourcePool
@@ -84,6 +88,9 @@ func NewService(opts ServiceOptions) (s *Service, err error) {
 	}
 	if opts.HTTPProxyInfo == nil {
 		return nil, fmt.Errorf("opts.HTTPProxyInfo must not be nil")
+	}
+	if opts.HTTPTransport == nil {
+		return nil, fmt.Errorf("opts.HTTPTransport must not be nil")
 	}
 	if opts.PublicModules == nil {
 		return nil, fmt.Errorf("opts.PublicModules must not be nil")
@@ -122,8 +129,11 @@ func NewService(opts ServiceOptions) (s *Service, err error) {
 		publicModulesGoSumDBEnvVar = opts.PublicModules.SumDatabase.FormatGoSumDBEnvVar()
 	}
 	ss := &Service{
-		gitCredentialHelperShell:   opts.GitCredentialHelperShell,
-		goBinFile:                  goBinFile2,
+		gitCredentialHelperShell: opts.GitCredentialHelperShell,
+		goBinFile:                goBinFile2,
+		httpClient: &http.Client{
+			Transport: opts.HTTPTransport,
+		},
 		httpProxyInfo:              opts.HTTPProxyInfo,
 		privateModules:             opts.PrivateModules,
 		publicModulesGoSumDBEnvVar: publicModulesGoSumDBEnvVar,
@@ -135,10 +145,11 @@ func NewService(opts ServiceOptions) (s *Service, err error) {
 	if opts.ParentProxy != nil {
 		parentProxyStr := opts.ParentProxy.String()
 		// , is valid in URLs, but illegal in GOPROXY environment variable
-		if strings.ContainsAny(parentProxyStr, ",") {
-			return nil, fmt.Errorf(`opts.ParentProxy is invalid because opts.ParentProxy.String() contains illegal character ","`)
+		if strings.ContainsAny(parentProxyStr, "|,") {
+			return nil, fmt.Errorf(`opts.ParentProxy is invalid because opts.ParentProxy.String() contains illegal character "," or "|"`)
 		}
 		ss.envGoProxy = parentProxyStr + ",direct"
+		ss.parentProxyURL = parentProxyStr + "/"
 	}
 	// Sanity check to see if s.scratchDir is not within a Go module (otherwise this can interfere)
 	args := []string{ss.goBinFile, "mod", "download"}
@@ -269,6 +280,15 @@ func (s *Service) getGoModuleAndIndexIfNeeded(ctx context.Context, tempGoEnv *te
 		})
 	}
 	return
+}
+
+func (s *Service) getPrivateModulesElement(modulePath string) *config.PrivateModulesElement {
+	for _, privateModulesElement := range s.privateModules {
+		if util.PathIsLexicalDescendant(modulePath, privateModulesElement.PathPrefix) {
+			return privateModulesElement
+		}
+	}
+	return nil
 }
 
 func (s *Service) GoMod(ctx context.Context, moduleVersion *module.Version) (data io.ReadCloser, err error) {
@@ -517,16 +537,9 @@ func (s *Service) indexGoModule(tempGoEnv *tempGoEnv, commitTime time.Time, goMo
 }
 
 func (s *Service) initializeTempGoEnvForModule(ctx context.Context, tempGoEnv *tempGoEnv, modulePath string) error {
-	var privateModulesElement2 *config.PrivateModulesElement
-	for _, privateModulesElement1 := range s.privateModules {
-		if util.PathIsLexicalDescendant(modulePath, privateModulesElement1.PathPrefix) {
-			privateModulesElement2 = privateModulesElement1
-			break
-		}
-	}
 	gitConfig := git.Config{}
-	if privateModulesElement2 != nil {
-		if privateModulesElement2.Auth.GitHubApp != nil {
+	if privateModulesElement := s.getPrivateModulesElement(modulePath); privateModulesElement != nil {
+		if privateModulesElement.Auth.GitHubApp != nil {
 			// This indicates the module is private and hosted on github.com or another GitHub instance
 			// ...so we configure git credential helper.
 			gitConfig["credential"] = []git.KeyValuePair{
@@ -566,6 +579,34 @@ func (s *Service) Latest(ctx context.Context, modulePath string) (info *gomodule
 	if err != nil {
 		return
 	}
+	versionForGoCmd := "latest"
+	if s.parentProxyURL != "" {
+		// TODO also enable this optimization if no parent proxy is specified, since in this case we use the default parent proxy
+		if privateModulesElement := s.getPrivateModulesElement(modulePath); privateModulesElement == nil {
+			// Optimization: for public modules get latest from parent proxy instead of doing the HTTP request via a Go command.
+			info, err = httpLatest(ctx, s.parentProxyURL, s.httpClient, modulePath)
+			if err != nil {
+				if err == errHTTPNotFound {
+					err = gomoduleservice.NewErrorf(gomoduleservice.NotFound, "%v", err)
+				}
+				return
+			}
+			log.Tracef("@latest for module %#v is %#v (from parent proxy), ensuring version is cached...", modulePath, info.Version)
+			moduleVersion := &module.Version{
+				Path:    modulePath,
+				Version: info.Version,
+			}
+			info, err = s.infoFromConcatObj(ctx, moduleVersion)
+			if err == nil || !storage.ErrorIsCode(err, storage.NotFound) {
+				return
+			}
+			info, err = s.infoFromGoModObj(ctx, moduleVersion)
+			if err == nil || !storage.ErrorIsCode(err, storage.NotFound) {
+				return
+			}
+			versionForGoCmd = moduleVersion.Version
+		}
+	}
 	tempGoEnv, err := s.newTempGoEnv()
 	if err != nil {
 		return
@@ -587,7 +628,7 @@ func (s *Service) Latest(ctx context.Context, modulePath string) (info *gomodule
 	defer runCmdResource.release()
 	fSeeStorage, info2, _, err := s.getGoModuleAndIndexIfNeeded(ctx, tempGoEnv, &module.Version{
 		Path:    modulePath,
-		Version: "latest",
+		Version: versionForGoCmd,
 	}, runCmdResource)
 	if err != nil {
 		return

@@ -60,8 +60,8 @@ func NewServer(opts ServerOptions) (*Server, error) {
 	if opts.GoModuleService == nil {
 		return nil, fmt.Errorf("opts.GoModuleService must not be nil")
 	}
-	if opts.RequestAuthenticator == nil {
-		return nil, fmt.Errorf("opts.RequestAuthenticator must not be nil")
+	if opts.ClientAuthEnabled && opts.RequestAuthenticator == nil {
+		return nil, fmt.Errorf("if opts.ClientAuthEnabled is true then opts.RequestAuthenticator must not be nil")
 	}
 	s := &Server{
 		acl:                  opts.AccessControlList,
