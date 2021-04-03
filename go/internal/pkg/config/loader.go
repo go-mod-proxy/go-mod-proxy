@@ -154,9 +154,7 @@ func (l *Loader) validateConfig(vctx *validateValueContext, cfg *Config) {
 	} else if cfg.MaxChildProcesses < 0 {
 		vctx.Child("maxChildProcesses").AddErrorf("value must not be negative")
 	}
-	if l.cfg.ParentProxy != nil {
-		l.validateParentProxy(vctx.Child("parentProxy"), l.cfg.ParentProxy)
-	}
+	l.validateParentProxy(vctx.Child("parentProxy"), &l.cfg.ParentProxy)
 	l.validatePrivateModules(vctx.Child("privateModules"), l.cfg.PrivateModules)
 	for i, privateModulesElement := range l.cfg.PrivateModules {
 		if privateModulesElement != nil && privateModulesElement.isValid {

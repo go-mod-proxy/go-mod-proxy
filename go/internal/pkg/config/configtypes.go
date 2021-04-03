@@ -60,7 +60,7 @@ type Config struct {
 	GitHub            []*GitHubInstance        `yaml:"gitHub"`
 	HTTPProxy         *HTTPProxy               `yaml:"httpProxy"`
 	MaxChildProcesses int                      `yaml:"maxChildProcesses"`
-	ParentProxy       *ParentProxy             `yaml:"parentProxy"`
+	ParentProxy       ParentProxy              `yaml:"parentProxy"`
 	PrivateModules    []*PrivateModulesElement `yaml:"privateModules"`
 	PublicModules     PublicModules            `yaml:"publicModules"`
 	Storage           *Storage                 `yaml:"storage"`
