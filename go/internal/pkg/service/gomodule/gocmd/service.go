@@ -92,6 +92,9 @@ func NewService(opts ServiceOptions) (s *Service, err error) {
 	if opts.HTTPTransport == nil {
 		return nil, fmt.Errorf("opts.HTTPTransport must not be nil")
 	}
+	if opts.ParentProxy == nil {
+		return nil, fmt.Errorf("opts.ParentProxy must not be nil")
+	}
 	if opts.PublicModules == nil {
 		return nil, fmt.Errorf("opts.PublicModules must not be nil")
 	}
@@ -142,15 +145,13 @@ func NewService(opts ServiceOptions) (s *Service, err error) {
 		storage:                    opts.Storage,
 		tempGoEnvBaseEnviron:       getTempGoEnvBaseEnviron(),
 	}
-	if opts.ParentProxy != nil {
-		parentProxyStr := opts.ParentProxy.String()
-		// , is valid in URLs, but illegal in GOPROXY environment variable
-		if strings.ContainsAny(parentProxyStr, "|,") {
-			return nil, fmt.Errorf(`opts.ParentProxy is invalid because opts.ParentProxy.String() contains illegal character "," or "|"`)
-		}
-		ss.envGoProxy = parentProxyStr + ",direct"
-		ss.parentProxyURL = parentProxyStr + "/"
+	parentProxyStr := opts.ParentProxy.String()
+	// , is valid in URLs, but illegal in GOPROXY environment variable
+	if strings.ContainsAny(parentProxyStr, "|,") {
+		return nil, fmt.Errorf(`opts.ParentProxy is invalid because opts.ParentProxy.String() contains illegal character "," or "|"`)
 	}
+	ss.envGoProxy = parentProxyStr + ",direct"
+	ss.parentProxyURL = parentProxyStr + "/"
 	// Sanity check to see if s.scratchDir is not within a Go module (otherwise this can interfere)
 	args := []string{ss.goBinFile, "mod", "download"}
 	t, err := ss.newTempGoEnv()
@@ -561,12 +562,7 @@ func (s *Service) initializeTempGoEnvForModule(ctx context.Context, tempGoEnv *t
 		tempGoEnv.Environ.Set("GOPROXY", "direct")
 		tempGoEnv.Environ.Set("GOSUMDB", "off")
 	} else {
-		if s.envGoProxy != "" {
-			tempGoEnv.Environ.Set("GOPROXY", s.envGoProxy)
-		} else {
-			// Use default proxy
-			tempGoEnv.Environ.Unset("GOPROXY")
-		}
+		tempGoEnv.Environ.Set("GOPROXY", s.envGoProxy)
 		if s.publicModulesGoSumDBEnvVar != "" {
 			tempGoEnv.Environ.Set("GOSUMDB", s.publicModulesGoSumDBEnvVar)
 		} else {
@@ -588,35 +584,32 @@ func (s *Service) Latest(ctx context.Context, modulePath string) (info *gomodule
 		return
 	}
 	versionForGoCmd := "latest"
-	if s.parentProxyURL != "" {
-		// TODO also enable this optimization if no parent proxy is specified, since in this case we use the default parent proxy
-		if privateModulesElement := s.getPrivateModulesElement(modulePath); privateModulesElement == nil {
-			// Optimization heuristic for public modules:
-			// Get latest from parent proxy instead of doing the HTTP request via a Go command and return the version from the cache
-			// if it is already cached. This does not work well if the latest version changes a lot, because then we waste more work
-			// checking the cache than we gain.
-			info, err = httpLatest(ctx, s.parentProxyURL, s.httpClient, modulePath)
-			if err != nil {
-				if err == errHTTPNotFound {
-					err = gomoduleservice.NewErrorf(gomoduleservice.NotFound, "%v", err)
-				}
-				return
+	if privateModulesElement := s.getPrivateModulesElement(modulePath); privateModulesElement == nil {
+		// Optimization heuristic for public modules:
+		// Get latest from parent proxy instead of doing the HTTP request via a Go command and return the version from the cache
+		// if it is already cached. This does not work well if the latest version changes a lot, because then we waste more work
+		// checking the cache than we gain.
+		info, err = httpLatest(ctx, s.parentProxyURL, s.httpClient, modulePath)
+		if err != nil {
+			if err == errHTTPNotFound {
+				err = gomoduleservice.NewErrorf(gomoduleservice.NotFound, "%v", err)
 			}
-			log.Tracef("@latest for module %#v is %#v (from parent proxy), ensuring version is cached...", modulePath, info.Version)
-			moduleVersion := &module.Version{
-				Path:    modulePath,
-				Version: info.Version,
-			}
-			info, err = s.infoFromConcatObj(ctx, moduleVersion)
-			if err == nil || !gomoduleservice.ErrorIsCode(err, gomoduleservice.NotFound) {
-				return
-			}
-			info, err = s.infoFromGoModObj(ctx, moduleVersion)
-			if err == nil || !gomoduleservice.ErrorIsCode(err, gomoduleservice.NotFound) {
-				return
-			}
-			versionForGoCmd = moduleVersion.Version
+			return
 		}
+		log.Tracef("@latest for module %#v is %#v (from parent proxy), ensuring version is cached...", modulePath, info.Version)
+		moduleVersion := &module.Version{
+			Path:    modulePath,
+			Version: info.Version,
+		}
+		info, err = s.infoFromConcatObj(ctx, moduleVersion)
+		if err == nil || !gomoduleservice.ErrorIsCode(err, gomoduleservice.NotFound) {
+			return
+		}
+		info, err = s.infoFromGoModObj(ctx, moduleVersion)
+		if err == nil || !gomoduleservice.ErrorIsCode(err, gomoduleservice.NotFound) {
+			return
+		}
+		versionForGoCmd = moduleVersion.Version
 	}
 	tempGoEnv, err := s.newTempGoEnv()
 	if err != nil {

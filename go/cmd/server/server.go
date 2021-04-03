@@ -221,10 +221,6 @@ func Run(ctx context.Context, opts *CLI) error {
 	if scratchDir == "" {
 		scratchDir = os.TempDir()
 	}
-	var parentProxy *url.URL
-	if cfg.ParentProxy != nil {
-		parentProxy = cfg.ParentProxy.URLParsed
-	}
 	goModuleService, err := servicegomodulegocmd.NewService(servicegomodulegocmd.ServiceOptions{
 		GitCredentialHelperShell: fmt.Sprintf("exec %s --log-level=%s credential-helper --type=git --port=%d",
 			shellescape.Quote(executable2),
@@ -233,7 +229,7 @@ func Run(ctx context.Context, opts *CLI) error {
 		HTTPProxyInfo:       httpProxyInfo,
 		HTTPTransport:       httpTransport,
 		MaxParallelCommands: cfg.MaxChildProcesses,
-		ParentProxy:         parentProxy,
+		ParentProxy:         cfg.ParentProxy.URLParsed,
 		PrivateModules:      cfg.PrivateModules,
 		PublicModules:       &cfg.PublicModules,
 		ScratchDir:          scratchDir,
