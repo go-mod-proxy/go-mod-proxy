@@ -20,6 +20,7 @@ import (
 
 	"github.com/go-mod-proxy/go/internal/pkg/config"
 	"github.com/go-mod-proxy/go/internal/pkg/git"
+	"github.com/go-mod-proxy/go/internal/pkg/modproxyclient"
 	gomoduleservice "github.com/go-mod-proxy/go/internal/pkg/service/gomodule"
 	"github.com/go-mod-proxy/go/internal/pkg/service/storage"
 	"github.com/go-mod-proxy/go/internal/pkg/util"
@@ -589,9 +590,9 @@ func (s *Service) Latest(ctx context.Context, modulePath string) (info *gomodule
 		// Get latest from parent proxy instead of doing the HTTP request via a Go command and return the version from the cache
 		// if it is already cached. This does not work well if the latest version changes a lot, because then we waste more work
 		// checking the cache than we gain.
-		info, err = httpLatest(ctx, s.parentProxyURL, s.httpClient, modulePath)
+		info, err = modproxyclient.Latest(ctx, s.parentProxyURL, s.httpClient, modulePath)
 		if err != nil {
-			if err == errHTTPNotFound {
+			if err == modproxyclient.ErrNotFound {
 				err = gomoduleservice.NewErrorf(gomoduleservice.NotFound, "%v", err)
 			}
 			return
@@ -670,7 +671,10 @@ func (s *Service) List(ctx context.Context, modulePath string) (io.ReadCloser, e
 		if privateModulesElement := s.getPrivateModulesElement(modulePath); privateModulesElement == nil {
 			// For public modules send a request to the parent proxy directly instead of via a "go list" command.
 			// This also avoids an unnecessary second request performed by a "go list" command when GET "/@v/list" returns zero versions.
-			goListVersions, err = httpList(ctx, s.parentProxyURL, s.httpClient, modulePath)
+			goListVersions, err = modproxyclient.List(ctx, s.parentProxyURL, s.httpClient, modulePath)
+			if err == modproxyclient.ErrNotFound {
+				err = gomoduleservice.NewErrorf(gomoduleservice.NotFound, "%v", err)
+			}
 		} else {
 			goListVersions, err = s.listGoCmd(ctx, modulePath)
 		}
