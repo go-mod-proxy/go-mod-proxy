@@ -815,10 +815,53 @@ func (s *Service) listGoCmd(ctx context.Context, modulePath string) (goListVersi
 		err = fmt.Errorf("command %s succeeded but got unexpected stderr/stdout:\n%s", formatArgs(args), strLog)
 		return
 	}
-	// NOTE: if len(goListInfo.Versions) == 0 and goListInfo.Version is not empty then we will have actually queried
-	// the latest version of the module. TODO consider using this information by indexing module goListInfo.Version.
 	goListVersions = goListInfo.Versions
+	if len(goListInfo.Versions) == 0 {
+		// NOTE: if len(goListInfo.Versions) == 0 then we will have actually queried the latest version of the module (if the command exited
+		// with code 0). Use this information and index the version.
+		go s.listGoCmdIndex(&module.Version{
+			Path:    modulePath,
+			Version: goListInfo.Version,
+		})
+	}
 	return
+}
+
+func (s *Service) listGoCmdIndex(moduleVersion *module.Version) {
+	log.Tracef(`discovered latest version (%#v) of module %#v through a \"go list\" command, eagerly caching this module version...`,
+		moduleVersion.Version, moduleVersion.Path)
+	ctx := context.Background()
+	_, err := s.infoFromGoModObj(ctx, moduleVersion)
+	if err == nil {
+		log.Tracef(`latest version (%#v) of module %#v discovered through a \"go list\" command is already cached`,
+			moduleVersion.Version, moduleVersion.Path)
+		return
+	}
+	if !gomoduleservice.ErrorIsCode(err, gomoduleservice.NotFound) {
+		log.Errorf(`error checking if latest version (%#v) of module %#v discovered through a \"go list\" command is already cached: %v`,
+			moduleVersion.Version, moduleVersion.Path, err)
+	}
+	runCmdResource, err := s.runCmdResourcePool.acquire(ctx)
+	if err != nil {
+		panic(err)
+	}
+	defer runCmdResource.release()
+	tempGoEnv, err := s.newTempGoEnv()
+	if err != nil {
+		log.Error(err)
+		return
+	}
+	defer func() {
+		err := tempGoEnv.removeRef()
+		if err != nil {
+			log.Errorf("error removing tmpDir %#v of *tempGoEnv: %v", tempGoEnv.TmpDir, err)
+		}
+	}()
+	_, _, _, err = s.getGoModuleAndIndexIfNeeded(ctx, tempGoEnv, moduleVersion, runCmdResource)
+	if err != nil {
+		log.Errorf(`error caching latest version (%#v) of module %#v discovered through a \"go list\" command: %v`,
+			moduleVersion.Version, moduleVersion.Path, err)
+	}
 }
 
 func (s *Service) newTempGoEnv() (*tempGoEnv, error) {
