@@ -8,16 +8,12 @@ import (
 type ErrorCode int
 
 const (
-	NotFound ErrorCode = iota
+	NotFound ErrorCode = iota + 1
 	PreconditionFailed
 )
 
 func ErrorIsCode(err error, code ErrorCode) bool {
-	var hasCode hasCode
-	if errors.As(err, &hasCode) {
-		return hasCode.code() == code
-	}
-	return false
+	return GetErrorCode(err) == code
 }
 
 type errorWithCode struct {
@@ -77,4 +73,12 @@ func NewErrorf(code ErrorCode, format string, args ...interface{}) error {
 
 type unwrap interface {
 	Unwrap() error
+}
+
+func GetErrorCode(err error) ErrorCode {
+	var hasCode hasCode
+	if errors.As(err, &hasCode) {
+		return hasCode.code()
+	}
+	return 0
 }
