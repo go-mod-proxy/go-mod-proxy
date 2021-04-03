@@ -695,9 +695,6 @@ func (s *Service) List(ctx context.Context, modulePath string) (io.ReadCloser, e
 	}
 	var waitGroup sync.WaitGroup
 	for _, version := range goListVersions {
-		if module.IsPseudoVersion(version) {
-			continue
-		}
 		versionMapMutex.Lock()
 		_, flag := versionMap[version]
 		versionMapMutex.Unlock()
@@ -808,15 +805,7 @@ func (s *Service) listGoCmd(ctx context.Context, modulePath string) (goListVersi
 		err = fmt.Errorf("command %s succeeded but got unexpected stderr/stdout:\n%s", formatArgs(args), strLog)
 		return
 	}
-	if len(goListInfo.Versions) == 0 {
-		if goListInfo.Version == "" {
-			err = fmt.Errorf("command %s succeeded but got unexpected stderr/stdout:\n%s", formatArgs(args), strLog)
-			return
-		}
-		goListVersions = []string{goListInfo.Version}
-	} else {
-		goListVersions = goListInfo.Versions
-	}
+	goListVersions = goListInfo.Versions
 	return
 }
 
