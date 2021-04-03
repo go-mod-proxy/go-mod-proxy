@@ -24,7 +24,7 @@ The `.info`, `.zip` and `.mod` endpoints are strongly consistent. More formally:
 Read after list is strongly consistent:
 1. If a GET `<m>/@list` request lists version `<v>` then `.info`, `.zip` and `.mod` as reported by GET `<m>/v@/<v>.info`, `<m>/v@/<v>.zip` and `<m>/v@/<v>.mod` requests immediately reflect a copy of the module version.
 
-Similarly, list after read is strongly consistent (but note that not all versions are listed by the list endpoint).
+Similarly, list after read is strongly consistent (but list may return partial results in case of errors and list does not return pseudo-versions).
 
 ## NOTE
 Strong consistency is implemented using GCS atomic object creation. Implementing other storage backends may be easier by sacrificing strong consistency. For example, Amazon S3 does not support atomic object creation, but can still be pluggged in.
