@@ -653,29 +653,126 @@ func (s *Service) Latest(ctx context.Context, modulePath string) (info *gomodule
 	return
 }
 
-func (s *Service) List(ctx context.Context, modulePath string) (d io.ReadCloser, err error) {
-	err = s.notFoundOptimizations(modulePath)
-	if err != nil {
-		return
+func (s *Service) List(ctx context.Context, modulePath string) (io.ReadCloser, error) {
+	if err := s.notFoundOptimizations(modulePath); err != nil {
+		return nil, err
 	}
 	versionMap := map[string]struct{}{}
-	err = s.listAddObjectNames(ctx, storageGoModObjNamePrefix+modulePath+"@", versionMap)
-	if err != nil {
-		return
-	}
-	err = s.listAddObjectNames(ctx, storageConcatObjNamePrefix+modulePath+"@", versionMap)
-	if err != nil {
-		return
-	}
-	logger := log.StandardLogger()
-	if logLevel := log.TraceLevel; logger.IsLevelEnabled(logLevel) {
-		var sb strings.Builder
-		fmt.Fprintf(&sb, "list for module path %#v initialized with GCS versions: ", modulePath)
-		for version := range versionMap {
-			fmt.Fprintf(&sb, "%#v, ", version)
+	versionMapMutex := new(sync.Mutex)
+	errChan := make(chan error)
+	ctx, cancelFunc := context.WithCancel(ctx)
+	defer cancelFunc()
+	go s.listAddObjectNames(ctx, errChan, storageGoModObjNamePrefix+modulePath+"@", versionMap, versionMapMutex)
+	go s.listAddObjectNames(ctx, errChan, storageConcatObjNamePrefix+modulePath+"@", versionMap, versionMapMutex)
+	var goListVersions []string
+	go func() {
+		var err error
+		goListVersions, err = s.listGoCmd(ctx, modulePath)
+		errChan <- err
+	}()
+	var err error
+	// The constant 3 must be aligned with the number of Goroutines above, and each Goroutine must send on errChan exactly once.
+	for i := 0; i < 3; i++ {
+		err2 := <-errChan
+		if err2 != nil {
+			if err == nil {
+				err = err2
+				cancelFunc()
+			} else {
+				select {
+				case <-ctx.Done():
+					if err == ctx.Err() {
+						continue
+					}
+				default:
+				}
+				log.Errorf("got secondary error while listing versions: %v", err)
+			}
 		}
-		log.NewEntry(logger).Logf(logLevel, sb.String())
 	}
+	if err != nil {
+		return nil, err
+	}
+	var waitGroup sync.WaitGroup
+	for _, version := range goListVersions {
+		if module.IsPseudoVersion(version) {
+			continue
+		}
+		versionMapMutex.Lock()
+		_, flag := versionMap[version]
+		versionMapMutex.Unlock()
+		if flag {
+			continue
+		}
+		version := version
+		runCmdResource, err := s.runCmdResourcePool.acquire(ctx)
+		if err != nil {
+			return nil, err
+		}
+		waitGroup.Add(1)
+		go func() {
+			defer runCmdResource.release()
+			defer waitGroup.Done()
+			tempGoEnv, err := s.newTempGoEnv()
+			if err != nil {
+				log.Error(err)
+				return
+			}
+			defer func() {
+				err := tempGoEnv.removeRef()
+				if err != nil {
+					log.Errorf("error removing tmpDir %#v of *tempGoEnv: %v", tempGoEnv.TmpDir, err)
+				}
+			}()
+			_, _, _, err = s.getGoModuleAndIndexIfNeeded(ctx, tempGoEnv, &module.Version{Path: modulePath, Version: version}, runCmdResource)
+			if err != nil {
+				log.Error(err)
+				return
+			}
+			versionMapMutex.Lock()
+			versionMap[version] = struct{}{}
+			versionMapMutex.Unlock()
+		}()
+	}
+	waitGroup.Wait()
+	var sb strings.Builder
+	for version := range versionMap {
+		sb.WriteString(version)
+		sb.WriteByte('\n')
+	}
+	return ioutil.NopCloser(strings.NewReader(sb.String())), nil
+}
+
+func (s *Service) listAddObjectNames(ctx context.Context, errChan chan<- error, namePrefix string,
+	versionMap map[string]struct{}, versionMapMutex *sync.Mutex) {
+	var pageToken string
+	for {
+		var objList *storage.ObjectList
+		objList, err := s.storage.ListObjects(ctx, storage.ObjectListOptions{
+			NamePrefix: namePrefix,
+			PageToken:  pageToken,
+		})
+		if err != nil {
+			errChan <- mapStorageError(err)
+			return
+		}
+		versionMapMutex.Lock()
+		for _, name := range objList.Names {
+			version := name[len(namePrefix):]
+			if !module.IsPseudoVersion(version) {
+				versionMap[version] = struct{}{}
+			}
+		}
+		versionMapMutex.Unlock()
+		pageToken = objList.NextPageToken
+		if pageToken == "" {
+			break
+		}
+	}
+	errChan <- nil
+}
+
+func (s *Service) listGoCmd(ctx context.Context, modulePath string) (goListVersions []string, err error) {
 	tempGoEnv, err := s.newTempGoEnv()
 	if err != nil {
 		return
@@ -711,7 +808,6 @@ func (s *Service) List(ctx context.Context, modulePath string) (d io.ReadCloser,
 		err = fmt.Errorf("command %s succeeded but got unexpected stderr/stdout:\n%s", formatArgs(args), strLog)
 		return
 	}
-	var goListVersions []string
 	if len(goListInfo.Versions) == 0 {
 		if goListInfo.Version == "" {
 			err = fmt.Errorf("command %s succeeded but got unexpected stderr/stdout:\n%s", formatArgs(args), strLog)
@@ -720,82 +816,6 @@ func (s *Service) List(ctx context.Context, modulePath string) (d io.ReadCloser,
 		goListVersions = []string{goListInfo.Version}
 	} else {
 		goListVersions = goListInfo.Versions
-	}
-	var waitGroup sync.WaitGroup
-	var versionMapMutex sync.Mutex
-	for _, version := range goListVersions {
-		if module.IsPseudoVersion(version) {
-			continue
-		}
-		versionMapMutex.Lock()
-		_, flag := versionMap[version]
-		versionMapMutex.Unlock()
-		if flag {
-			continue
-		}
-		version := version
-		var runCmdResource maxParallelismResource
-		runCmdResource, err = s.runCmdResourcePool.acquire(ctx)
-		if err != nil {
-			return
-		}
-		waitGroup.Add(1)
-		go func() {
-			defer runCmdResource.release()
-			defer waitGroup.Done()
-			tempGoEnv, err := s.newTempGoEnv()
-			if err != nil {
-				log.Error(err)
-				return
-			}
-			defer func() {
-				err := tempGoEnv.removeRef()
-				if err != nil {
-					log.Errorf("error removing tmpDir %#v of *tempGoEnv: %v", tempGoEnv.TmpDir, err)
-				}
-			}()
-			_, _, _, err = s.getGoModuleAndIndexIfNeeded(ctx, tempGoEnv, &module.Version{Path: modulePath, Version: version}, runCmdResource)
-			if err != nil {
-				log.Error(err)
-				return
-			}
-			versionMapMutex.Lock()
-			versionMap[version] = struct{}{}
-			versionMapMutex.Unlock()
-		}()
-	}
-	waitGroup.Wait()
-	var sb strings.Builder
-	for version := range versionMap {
-		sb.WriteString(version)
-		sb.WriteByte('\n')
-	}
-	d = ioutil.NopCloser(strings.NewReader(sb.String()))
-	return
-}
-
-func (s *Service) listAddObjectNames(ctx context.Context, namePrefix string, versionMap map[string]struct{}) (err error) {
-	var pageToken string
-	for {
-		var objList *storage.ObjectList
-		objList, err = s.storage.ListObjects(ctx, storage.ObjectListOptions{
-			NamePrefix: namePrefix,
-			PageToken:  pageToken,
-		})
-		if err != nil {
-			err = mapStorageError(err)
-			return
-		}
-		for _, name := range objList.Names {
-			version := name[len(namePrefix):]
-			if !module.IsPseudoVersion(version) {
-				versionMap[version] = struct{}{}
-			}
-		}
-		pageToken = objList.NextPageToken
-		if pageToken == "" {
-			break
-		}
 	}
 	return
 }
