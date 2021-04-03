@@ -65,13 +65,20 @@ func Run(ctx context.Context, opts *CLI) error {
 	if err != nil {
 		return err
 	}
+	if cfg.ClientAuth.Enabled && (cfg.ClientAuth.Authenticators == nil || cfg.ClientAuth.Authenticators.AccessToken == nil) {
+		return fmt.Errorf("invalid configuration: if .clientAuth.enabled is true then .clientAuth.authenticators.accessToken must not be nil")
+	}
 	httpTransport := cleanhttp.DefaultTransport()
 	httpProxyInfo, err := config.GetHTTPProxyInfoAndUnsetEnviron(cfg)
 	if err != nil {
 		return err
 	}
-	httpTransport.Proxy = func(req *http.Request) (*url.URL, error) {
-		return httpProxyInfo.ProxyFunc(req.URL)
+	if httpProxyInfo.ProxyFunc != nil {
+		httpTransport.Proxy = func(req *http.Request) (*url.URL, error) {
+			return httpProxyInfo.ProxyFunc(req.URL)
+		}
+	} else {
+		httpTransport.Proxy = nil
 	}
 	httpClient := &http.Client{
 		Transport: httpTransport,
@@ -126,69 +133,70 @@ func Run(ctx context.Context, opts *CLI) error {
 	} else {
 		return fmt.Errorf("non-GCS storage is not implemented")
 	}
-	var instanceIdentityVerifier *jaspercompute.InstanceIdentityVerifier
-	if !enableGCEAuth {
-		log.Infof("not enabling GCE authentication because .clientAuth.enabled is not true or no element of .clientAuth.identities in %#v has .gceInstanceIdentityBinding != null",
-			opts.ConfigFile)
-	} else {
-		log.Infof("enabling GCE authentication because an element of .clientAuth.identities in %#v has .gceInstanceIdentityBinding != null",
-			opts.ConfigFile)
-		iamService, err := iam.NewService(ctx, option.WithHTTPClient(googleHTTPClient))
-		if err != nil {
-			return err
-		}
-		validatorUsingGoogle, err := config.NewValidatorUsingGoogle(ctx, cfg, iamService)
-		if err != nil {
-			return err
-		}
-		if err := validatorUsingGoogle.Run(); err != nil {
-			return fmt.Errorf("error validating file %#v: %w", opts.ConfigFile, err)
-		}
-		computeService, err := compute.NewService(ctx, option.WithHTTPClient(googleHTTPClient))
-		if err != nil {
-			return err
-		}
-		keySetProvider := jaspergoogle.CachingKeySetProvider(
-			jaspergoogle.DefaultCachingKeySetProviderTimeToLive,
-			jaspergoogle.HTTPSKeySetProvider(httpClient),
-		)
-		instanceIdentityVerifier, err = jaspercompute.NewInstanceIdentityVerifier(
-			cfg.ClientAuth.Authenticators.GCEInstanceIdentity.Audience,
-			jaspercompute.WithInstanceGetter(func(ctx context.Context, projectID, zone, instanceName string) (*compute.Instance, error) {
-				return computeService.Instances.Get(projectID, zone, instanceName).Context(ctx).Do()
-			}),
-			jaspercompute.WithServiceAccountGetter(func(ctx context.Context, name string) (*iam.ServiceAccount, error) {
-				return iamService.Projects.ServiceAccounts.Get(name).Context(ctx).Do()
-			}),
-			jaspercompute.WithKeySetProvider(keySetProvider),
-		)
-		if err != nil {
-			return err
-		}
-	}
-	identityStore, err := auth.NewInMemoryIdentityStore()
-	if err != nil {
-		return err
-	}
-	for _, identity := range cfg.ClientAuth.Identities {
-		err := identityStore.Add(identity)
-		if err != nil {
-			return err
-		}
-	}
-	accessTokenAuth, err := serviceauthaccesstoken.NewAuthenticator(
-		cfg.ClientAuth.Authenticators.AccessToken.Audience,
-		cfg.ClientAuth.Authenticators.AccessToken.Secret.Plaintext,
-		cfg.ClientAuth.Authenticators.AccessToken.TimeToLive,
-		identityStore,
-	)
-	realm := ""
+	var accessTokenAuth *serviceauthaccesstoken.Authenticator
 	var gceAuth *serviceauthgce.Authenticator
-	if instanceIdentityVerifier != nil {
+	var identityStore auth.IdentityStore
+	realm := ""
+	if cfg.ClientAuth.Enabled {
 		var err error
-		gceAuth, err = serviceauthgce.NewAuthenticator(instanceIdentityVerifier, identityStore)
+		identityStore, err = auth.NewInMemoryIdentityStore()
 		if err != nil {
 			return err
+		}
+		for _, identity := range cfg.ClientAuth.Identities {
+			err := identityStore.Add(identity)
+			if err != nil {
+				return err
+			}
+		}
+		accessTokenAuth, err = serviceauthaccesstoken.NewAuthenticator(
+			cfg.ClientAuth.Authenticators.AccessToken.Audience,
+			cfg.ClientAuth.Authenticators.AccessToken.Secret.Plaintext,
+			cfg.ClientAuth.Authenticators.AccessToken.TimeToLive,
+			identityStore,
+		)
+		if !enableGCEAuth {
+			log.Infof("not enabling GCE authentication because .clientAuth.enabled is not true or no element of .clientAuth.identities in %#v has .gceInstanceIdentityBinding != null",
+				opts.ConfigFile)
+		} else {
+			log.Infof("enabling GCE authentication because an element of .clientAuth.identities in %#v has .gceInstanceIdentityBinding != null",
+				opts.ConfigFile)
+			iamService, err := iam.NewService(ctx, option.WithHTTPClient(googleHTTPClient))
+			if err != nil {
+				return err
+			}
+			validatorUsingGoogle, err := config.NewValidatorUsingGoogle(ctx, cfg, iamService)
+			if err != nil {
+				return err
+			}
+			if err := validatorUsingGoogle.Run(); err != nil {
+				return fmt.Errorf("error validating file %#v: %w", opts.ConfigFile, err)
+			}
+			computeService, err := compute.NewService(ctx, option.WithHTTPClient(googleHTTPClient))
+			if err != nil {
+				return err
+			}
+			keySetProvider := jaspergoogle.CachingKeySetProvider(
+				jaspergoogle.DefaultCachingKeySetProviderTimeToLive,
+				jaspergoogle.HTTPSKeySetProvider(httpClient),
+			)
+			instanceIdentityVerifier, err := jaspercompute.NewInstanceIdentityVerifier(
+				cfg.ClientAuth.Authenticators.GCEInstanceIdentity.Audience,
+				jaspercompute.WithInstanceGetter(func(ctx context.Context, projectID, zone, instanceName string) (*compute.Instance, error) {
+					return computeService.Instances.Get(projectID, zone, instanceName).Context(ctx).Do()
+				}),
+				jaspercompute.WithServiceAccountGetter(func(ctx context.Context, name string) (*iam.ServiceAccount, error) {
+					return iamService.Projects.ServiceAccounts.Get(name).Context(ctx).Do()
+				}),
+				jaspercompute.WithKeySetProvider(keySetProvider),
+			)
+			if err != nil {
+				return err
+			}
+			gceAuth, err = serviceauthgce.NewAuthenticator(instanceIdentityVerifier, identityStore)
+			if err != nil {
+				return err
+			}
 		}
 	}
 	gitHubClientManager, err := github.NewGitHubClientManager(github.GitHubClientManagerOptions{
@@ -223,6 +231,7 @@ func Run(ctx context.Context, opts *CLI) error {
 			log.GetLevel().String(),
 			opts.CredentialHelperPort),
 		HTTPProxyInfo:       httpProxyInfo,
+		HTTPTransport:       httpTransport,
 		MaxParallelCommands: cfg.MaxChildProcesses,
 		ParentProxy:         parentProxy,
 		PrivateModules:      cfg.PrivateModules,

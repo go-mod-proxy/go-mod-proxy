@@ -82,7 +82,7 @@ func (s *Storage) CreateObjectExclusively(ctx context.Context,
 	// This can also be implemented using s.gcsClientBucket.Object(name).
 	//		If(gcs.Conditions{DoesNotExist:true}).
 	//		NewWriter(ctx)
-	// but the current implementation does a single multipart/related HTTP request rather
+	// but this implementation does a single multipart/related HTTP request rather
 	// than 2 or more requests with s.gcsClientBucket approach (assuming non-empty body), and
 	// sets the fields parameter.
 	// A disadvantage is that there's more code in our case.

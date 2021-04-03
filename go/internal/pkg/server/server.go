@@ -40,31 +40,32 @@ type Server struct {
 }
 
 func NewServer(opts ServerOptions) (*Server, error) {
-	if opts.AccessTokenAuthenticator == nil {
-		return nil, fmt.Errorf("opts.AccessTokenAuthenticator must not be nil")
+	if opts.ClientAuthEnabled {
+		if opts.AccessTokenAuthenticator == nil {
+			return nil, fmt.Errorf("if opts.ClientAuthEnabled is true then opts.AccessTokenAuthenticator must not be nil")
+		}
+		if opts.IdentityStore == nil {
+			return nil, fmt.Errorf("if opts.ClientAuthEnabled is true then opts.IdentityStore must not be nil")
+		}
+	} else {
+		if opts.AccessTokenAuthenticator != nil {
+			return nil, fmt.Errorf("if opts.ClientAuthEnabled is false then opts.AccessTokenAuthenticator must be nil")
+		}
+		if opts.GCEAuthenticator != nil {
+			return nil, fmt.Errorf("if opts.ClientAuthEnabled is false then opts.GCEAuthenticator must be nil")
+		}
+		if opts.IdentityStore != nil {
+			return nil, fmt.Errorf("if opts.ClientAuthEnabled is false then opts.IdentityStore must be nil")
+		}
 	}
 	if opts.GoModuleService == nil {
 		return nil, fmt.Errorf("opts.GoModuleService must not be nil")
-	}
-	if opts.IdentityStore == nil {
-		return nil, fmt.Errorf("opts.IdentityStore must not be nil")
 	}
 	if opts.SumDatabaseProxy == nil {
 		return nil, fmt.Errorf("opts.SumDatabaseProxy must not be nil")
 	}
 	if opts.Transport == nil {
 		return nil, fmt.Errorf("opts.Transport must not be nil")
-	}
-	accessTokenAuthenticator, err := jasperhttp.NewBearerAuthorizer(opts.Realm, opts.AccessTokenAuthenticator.Authenticate)
-	if err != nil {
-		return nil, err
-	}
-	accessTokenAuthenticatorFunc := func(w http.ResponseWriter, req *http.Request) *serviceauth.Identity {
-		identityRaw := accessTokenAuthenticator.Authorize(w, req)
-		if identityRaw == nil {
-			return nil
-		}
-		return identityRaw.(*serviceauth.Identity)
 	}
 	router := mux.NewRouter().UseEncodedPath().SkipClean(true)
 	s := &Server{
@@ -73,23 +74,37 @@ func NewServer(opts ServerOptions) (*Server, error) {
 		realm:                    opts.Realm,
 		router:                   router,
 	}
+	var accessTokenAuthenticatorFunc func(w http.ResponseWriter, req *http.Request) *serviceauth.Identity
 	authRouter := s.router.PathPrefix("/auth/").Subrouter()
-	authRouter.Path("/userpassword").Methods(http.MethodPost).HandlerFunc(s.authenticateUserPassword)
-	if opts.GCEAuthenticator != nil {
-		gceBearerAuth, err := jasperhttp.NewBearerAuthorizer(opts.Realm, opts.GCEAuthenticator.Authenticate)
+	if opts.ClientAuthEnabled {
+		accessTokenAuthenticator, err := jasperhttp.NewBearerAuthorizer(opts.Realm, opts.AccessTokenAuthenticator.Authenticate)
 		if err != nil {
 			return nil, err
 		}
-		authRouter.Path("/gce").Methods(http.MethodPost).HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-			data := gceBearerAuth.Authorize(w, req)
-			if data == nil {
-				return
+		accessTokenAuthenticatorFunc = func(w http.ResponseWriter, req *http.Request) *serviceauth.Identity {
+			identityRaw := accessTokenAuthenticator.Authorize(w, req)
+			if identityRaw == nil {
+				return nil
 			}
-			authenticatedIdentity := data.(*serviceauth.Identity)
-			s.serveHTTPIssueToken(w, authenticatedIdentity)
-		})
+			return identityRaw.(*serviceauth.Identity)
+		}
+		authRouter.Path("/userpassword").Methods(http.MethodPost).HandlerFunc(s.authenticateUserPassword)
+		if opts.GCEAuthenticator != nil {
+			gceBearerAuth, err := jasperhttp.NewBearerAuthorizer(opts.Realm, opts.GCEAuthenticator.Authenticate)
+			if err != nil {
+				return nil, err
+			}
+			authRouter.Path("/gce").Methods(http.MethodPost).HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+				data := gceBearerAuth.Authorize(w, req)
+				if data == nil {
+					return
+				}
+				authenticatedIdentity := data.(*serviceauth.Identity)
+				s.serveHTTPIssueToken(w, authenticatedIdentity)
+			})
+		}
 	}
-	_, err = servergosumdbproxy.NewServer(servergosumdbproxy.ServerOptions{
+	_, err := servergosumdbproxy.NewServer(servergosumdbproxy.ServerOptions{
 		ParentRouter:     router,
 		SumDatabaseProxy: opts.SumDatabaseProxy,
 		Transport:        opts.Transport,
