@@ -667,7 +667,13 @@ func (s *Service) List(ctx context.Context, modulePath string) (io.ReadCloser, e
 	var goListVersions []string
 	go func() {
 		var err error
-		goListVersions, err = s.listGoCmd(ctx, modulePath)
+		if privateModulesElement := s.getPrivateModulesElement(modulePath); privateModulesElement == nil {
+			// For public modules send a request to the parent proxy directly instead of via a "go list" command.
+			// This also avoids an unnecessary second request performed by a "go list" command when GET "/@v/list" returns zero versions.
+			goListVersions, err = httpList(ctx, s.parentProxyURL, s.httpClient, modulePath)
+		} else {
+			goListVersions, err = s.listGoCmd(ctx, modulePath)
+		}
 		errChan <- err
 	}()
 	var err error
@@ -805,6 +811,8 @@ func (s *Service) listGoCmd(ctx context.Context, modulePath string) (goListVersi
 		err = fmt.Errorf("command %s succeeded but got unexpected stderr/stdout:\n%s", formatArgs(args), strLog)
 		return
 	}
+	// NOTE: if len(goListInfo.Versions) == 0 and goListInfo.Version is not empty then we will have actually queried
+	// the latest version of the module. TODO consider using this information by indexing module goListInfo.Version.
 	goListVersions = goListInfo.Versions
 	return
 }
