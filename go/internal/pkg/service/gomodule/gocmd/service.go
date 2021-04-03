@@ -20,6 +20,7 @@ import (
 
 	"github.com/go-mod-proxy/go/internal/pkg/config"
 	"github.com/go-mod-proxy/go/internal/pkg/git"
+	"github.com/go-mod-proxy/go/internal/pkg/modproxyclient"
 	gomoduleservice "github.com/go-mod-proxy/go/internal/pkg/service/gomodule"
 	"github.com/go-mod-proxy/go/internal/pkg/service/storage"
 	"github.com/go-mod-proxy/go/internal/pkg/util"
@@ -589,9 +590,9 @@ func (s *Service) Latest(ctx context.Context, modulePath string) (info *gomodule
 		// Get latest from parent proxy instead of doing the HTTP request via a Go command and return the version from the cache
 		// if it is already cached. This does not work well if the latest version changes a lot, because then we waste more work
 		// checking the cache than we gain.
-		info, err = httpLatest(ctx, s.parentProxyURL, s.httpClient, modulePath)
+		info, err = modproxyclient.Latest(ctx, s.parentProxyURL, s.httpClient, modulePath)
 		if err != nil {
-			if err == errHTTPNotFound {
+			if err == modproxyclient.ErrNotFound {
 				err = gomoduleservice.NewErrorf(gomoduleservice.NotFound, "%v", err)
 			}
 			return
@@ -653,29 +654,132 @@ func (s *Service) Latest(ctx context.Context, modulePath string) (info *gomodule
 	return
 }
 
-func (s *Service) List(ctx context.Context, modulePath string) (d io.ReadCloser, err error) {
-	err = s.notFoundOptimizations(modulePath)
-	if err != nil {
-		return
+func (s *Service) List(ctx context.Context, modulePath string) (io.ReadCloser, error) {
+	if err := s.notFoundOptimizations(modulePath); err != nil {
+		return nil, err
 	}
 	versionMap := map[string]struct{}{}
-	err = s.listAddObjectNames(ctx, storageGoModObjNamePrefix+modulePath+"@", versionMap)
-	if err != nil {
-		return
-	}
-	err = s.listAddObjectNames(ctx, storageConcatObjNamePrefix+modulePath+"@", versionMap)
-	if err != nil {
-		return
-	}
-	logger := log.StandardLogger()
-	if logLevel := log.TraceLevel; logger.IsLevelEnabled(logLevel) {
-		var sb strings.Builder
-		fmt.Fprintf(&sb, "list for module path %#v initialized with GCS versions: ", modulePath)
-		for version := range versionMap {
-			fmt.Fprintf(&sb, "%#v, ", version)
+	versionMapMutex := new(sync.Mutex)
+	errChan := make(chan error)
+	ctx, cancelFunc := context.WithCancel(ctx)
+	defer cancelFunc()
+	go s.listAddObjectNames(ctx, errChan, storageGoModObjNamePrefix+modulePath+"@", versionMap, versionMapMutex)
+	go s.listAddObjectNames(ctx, errChan, storageConcatObjNamePrefix+modulePath+"@", versionMap, versionMapMutex)
+	var goListVersions []string
+	go func() {
+		var err error
+		if privateModulesElement := s.getPrivateModulesElement(modulePath); privateModulesElement == nil {
+			// For public modules send a request to the parent proxy directly instead of via a "go list" command.
+			// This also avoids an unnecessary second request performed by a "go list" command when GET "/@v/list" returns zero versions.
+			goListVersions, err = modproxyclient.List(ctx, s.parentProxyURL, s.httpClient, modulePath)
+			if err == modproxyclient.ErrNotFound {
+				err = gomoduleservice.NewErrorf(gomoduleservice.NotFound, "%v", err)
+			}
+		} else {
+			goListVersions, err = s.listGoCmd(ctx, modulePath)
 		}
-		log.NewEntry(logger).Logf(logLevel, sb.String())
+		errChan <- err
+	}()
+	var err error
+	// The constant 3 must be aligned with the number of Goroutines above, and each Goroutine must send on errChan exactly once.
+	for i := 0; i < 3; i++ {
+		err2 := <-errChan
+		if err2 != nil {
+			if err == nil {
+				err = err2
+				cancelFunc()
+			} else {
+				select {
+				case <-ctx.Done():
+					if err == ctx.Err() {
+						continue
+					}
+				default:
+				}
+				log.Errorf("got secondary error while listing versions: %v", err)
+			}
+		}
 	}
+	if err != nil {
+		return nil, err
+	}
+	var waitGroup sync.WaitGroup
+	for _, version := range goListVersions {
+		versionMapMutex.Lock()
+		_, flag := versionMap[version]
+		versionMapMutex.Unlock()
+		if flag {
+			continue
+		}
+		version := version
+		runCmdResource, err := s.runCmdResourcePool.acquire(ctx)
+		if err != nil {
+			return nil, err
+		}
+		waitGroup.Add(1)
+		go func() {
+			defer runCmdResource.release()
+			defer waitGroup.Done()
+			tempGoEnv, err := s.newTempGoEnv()
+			if err != nil {
+				log.Error(err)
+				return
+			}
+			defer func() {
+				err := tempGoEnv.removeRef()
+				if err != nil {
+					log.Errorf("error removing tmpDir %#v of *tempGoEnv: %v", tempGoEnv.TmpDir, err)
+				}
+			}()
+			_, _, _, err = s.getGoModuleAndIndexIfNeeded(ctx, tempGoEnv, &module.Version{Path: modulePath, Version: version}, runCmdResource)
+			if err != nil {
+				log.Error(err)
+				return
+			}
+			versionMapMutex.Lock()
+			versionMap[version] = struct{}{}
+			versionMapMutex.Unlock()
+		}()
+	}
+	waitGroup.Wait()
+	var sb strings.Builder
+	for version := range versionMap {
+		sb.WriteString(version)
+		sb.WriteByte('\n')
+	}
+	return ioutil.NopCloser(strings.NewReader(sb.String())), nil
+}
+
+func (s *Service) listAddObjectNames(ctx context.Context, errChan chan<- error, namePrefix string,
+	versionMap map[string]struct{}, versionMapMutex *sync.Mutex) {
+	var pageToken string
+	for {
+		var objList *storage.ObjectList
+		objList, err := s.storage.ListObjects(ctx, storage.ObjectListOptions{
+			NamePrefix: namePrefix,
+			PageToken:  pageToken,
+		})
+		if err != nil {
+			errChan <- mapStorageError(err)
+			return
+		}
+		versionMapMutex.Lock()
+		for _, name := range objList.Names {
+			version := name[len(namePrefix):]
+			if !module.IsPseudoVersion(version) {
+				versionMap[version] = struct{}{}
+			}
+		}
+		versionMapMutex.Unlock()
+		pageToken = objList.NextPageToken
+		if pageToken == "" {
+			break
+		}
+	}
+	errChan <- nil
+}
+
+func (s *Service) listGoCmd(ctx context.Context, modulePath string) (goListVersions []string, err error) {
 	tempGoEnv, err := s.newTempGoEnv()
 	if err != nil {
 		return
@@ -711,92 +815,9 @@ func (s *Service) List(ctx context.Context, modulePath string) (d io.ReadCloser,
 		err = fmt.Errorf("command %s succeeded but got unexpected stderr/stdout:\n%s", formatArgs(args), strLog)
 		return
 	}
-	var goListVersions []string
-	if len(goListInfo.Versions) == 0 {
-		if goListInfo.Version == "" {
-			err = fmt.Errorf("command %s succeeded but got unexpected stderr/stdout:\n%s", formatArgs(args), strLog)
-			return
-		}
-		goListVersions = []string{goListInfo.Version}
-	} else {
-		goListVersions = goListInfo.Versions
-	}
-	var waitGroup sync.WaitGroup
-	var versionMapMutex sync.Mutex
-	for _, version := range goListVersions {
-		if module.IsPseudoVersion(version) {
-			continue
-		}
-		versionMapMutex.Lock()
-		_, flag := versionMap[version]
-		versionMapMutex.Unlock()
-		if flag {
-			continue
-		}
-		version := version
-		var runCmdResource maxParallelismResource
-		runCmdResource, err = s.runCmdResourcePool.acquire(ctx)
-		if err != nil {
-			return
-		}
-		waitGroup.Add(1)
-		go func() {
-			defer runCmdResource.release()
-			defer waitGroup.Done()
-			tempGoEnv, err := s.newTempGoEnv()
-			if err != nil {
-				log.Error(err)
-				return
-			}
-			defer func() {
-				err := tempGoEnv.removeRef()
-				if err != nil {
-					log.Errorf("error removing tmpDir %#v of *tempGoEnv: %v", tempGoEnv.TmpDir, err)
-				}
-			}()
-			_, _, _, err = s.getGoModuleAndIndexIfNeeded(ctx, tempGoEnv, &module.Version{Path: modulePath, Version: version}, runCmdResource)
-			if err != nil {
-				log.Error(err)
-				return
-			}
-			versionMapMutex.Lock()
-			versionMap[version] = struct{}{}
-			versionMapMutex.Unlock()
-		}()
-	}
-	waitGroup.Wait()
-	var sb strings.Builder
-	for version := range versionMap {
-		sb.WriteString(version)
-		sb.WriteByte('\n')
-	}
-	d = ioutil.NopCloser(strings.NewReader(sb.String()))
-	return
-}
-
-func (s *Service) listAddObjectNames(ctx context.Context, namePrefix string, versionMap map[string]struct{}) (err error) {
-	var pageToken string
-	for {
-		var objList *storage.ObjectList
-		objList, err = s.storage.ListObjects(ctx, storage.ObjectListOptions{
-			NamePrefix: namePrefix,
-			PageToken:  pageToken,
-		})
-		if err != nil {
-			err = mapStorageError(err)
-			return
-		}
-		for _, name := range objList.Names {
-			version := name[len(namePrefix):]
-			if !module.IsPseudoVersion(version) {
-				versionMap[version] = struct{}{}
-			}
-		}
-		pageToken = objList.NextPageToken
-		if pageToken == "" {
-			break
-		}
-	}
+	// NOTE: if len(goListInfo.Versions) == 0 and goListInfo.Version is not empty then we will have actually queried
+	// the latest version of the module. TODO consider using this information by indexing module goListInfo.Version.
+	goListVersions = goListInfo.Versions
 	return
 }
 

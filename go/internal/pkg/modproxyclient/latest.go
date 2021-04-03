@@ -1,8 +1,7 @@
-package gocmd
+package modproxyclient
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"net/http"
 
@@ -12,9 +11,7 @@ import (
 	"github.com/go-mod-proxy/go/internal/pkg/util"
 )
 
-var errHTTPNotFound = errors.New("not found")
-
-func httpLatest(ctx context.Context, baseURL string, client *http.Client, modulePath string) (*gomoduleservice.Info, error) {
+func Latest(ctx context.Context, baseURL string, client *http.Client, modulePath string) (*gomoduleservice.Info, error) {
 	modulePathEscaped, err := module.EscapePath(modulePath)
 	if err != nil {
 		return nil, fmt.Errorf("modulePath is invalid: %v", err)
@@ -31,7 +28,7 @@ func httpLatest(ctx context.Context, baseURL string, client *http.Client, module
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
 		if resp.StatusCode == http.StatusNotFound || resp.StatusCode == http.StatusGone {
-			return nil, errHTTPNotFound
+			return nil, ErrNotFound
 		}
 		return nil, fmt.Errorf("server gave unexpected %d-response to %s %s", resp.StatusCode, req.Method, url)
 	}
