@@ -724,6 +724,9 @@ func (s *Service) List(ctx context.Context, modulePath string) (d io.ReadCloser,
 	var waitGroup sync.WaitGroup
 	var versionMapMutex sync.Mutex
 	for _, version := range goListVersions {
+		if module.IsPseudoVersion(version) {
+			continue
+		}
 		versionMapMutex.Lock()
 		_, flag := versionMap[version]
 		versionMapMutex.Unlock()
@@ -764,7 +767,6 @@ func (s *Service) List(ctx context.Context, modulePath string) (d io.ReadCloser,
 	waitGroup.Wait()
 	var sb strings.Builder
 	for version := range versionMap {
-		// TODO filter versions...
 		sb.WriteString(version)
 		sb.WriteByte('\n')
 	}
@@ -785,7 +787,10 @@ func (s *Service) listAddObjectNames(ctx context.Context, namePrefix string, ver
 			return
 		}
 		for _, name := range objList.Names {
-			versionMap[name[len(namePrefix):]] = struct{}{}
+			version := name[len(namePrefix):]
+			if !module.IsPseudoVersion(version) {
+				versionMap[version] = struct{}{}
+			}
 		}
 		pageToken = objList.NextPageToken
 		if pageToken == "" {
