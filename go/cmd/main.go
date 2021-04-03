@@ -15,7 +15,7 @@ import (
 
 func main() {
 	log.SetOutput(os.Stdout)
-	log.SetLevel(log.TraceLevel)
+	log.SetLevel(log.InfoLevel)
 	log.SetFormatter(&log.TextFormatter{
 		ForceColors: true,
 	})
