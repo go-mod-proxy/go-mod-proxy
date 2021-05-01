@@ -1,6 +1,6 @@
 module github.com/go-mod-proxy/go
 
-go 1.14
+go 1.16
 
 require (
 	cloud.google.com/go/storage v1.6.0
