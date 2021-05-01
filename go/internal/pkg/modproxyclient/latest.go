@@ -10,7 +10,7 @@ import (
 )
 
 func Latest(ctx context.Context, baseURL string, client *http.Client, modulePath string) (*gomoduleservice.Info, error) {
-	resp, err := doRequestCommon(ctx, baseURL, client, modulePath, "/@latest")
+	resp, err := doRequestCommon(ctx, baseURL, client, modulePath, "modulePath", "/@latest")
 	if err != nil {
 		return nil, err
 	}

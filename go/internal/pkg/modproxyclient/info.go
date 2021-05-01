@@ -6,10 +6,15 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"net/url"
+
+	"golang.org/x/mod/module"
 )
 
-func List(ctx context.Context, baseURL string, client *http.Client, modulePath string) ([]string, error) {
-	resp, err := doRequestCommon(ctx, baseURL, client, modulePath, "modulePath", "/@v/list")
+func Info(ctx context.Context, baseURL string, client *http.Client, moduleVersion *module.Version) ([]string, error) {
+	versionEscaped := url.PathEscape(moduleVersion.Version)
+
+	resp, err := doRequestCommon(ctx, baseURL, client, moduleVersion.Path, "/@v/"+versionEscaped+".info")
 	if err != nil {
 		return nil, err
 	}

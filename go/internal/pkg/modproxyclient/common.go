@@ -15,8 +15,8 @@ var (
 	ErrNotFound = errors.New("not found")
 )
 
-func doRequestCommon(ctx context.Context, baseURL string, client *http.Client, modulePath, urlSuffix string) (*http.Response, error) {
-	url, err := getURL(baseURL, modulePath, urlSuffix)
+func doRequestCommon(ctx context.Context, baseURL string, client *http.Client, modulePath, modulePathLocation, urlSuffix string) (*http.Response, error) {
+	url, err := getURL(baseURL, modulePath, modulePathLocation, urlSuffix)
 	if err != nil {
 		return nil, err
 	}
@@ -38,13 +38,13 @@ func doRequestCommon(ctx context.Context, baseURL string, client *http.Client, m
 	return resp, nil
 }
 
-func getURL(baseURL, modulePath, suffix string) (string, error) {
+func getURL(baseURL, modulePath, modulePathLocation, suffix string) (string, error) {
 	var sb strings.Builder
 	sb.Grow(len(baseURL) + len(modulePath) + len(suffix))
 	sb.WriteString(baseURL)
 	modulePathEscaped, err := module.EscapePath(modulePath)
 	if err != nil {
-		return "", fmt.Errorf("modulePath is invalid: %v", err)
+		return "", fmt.Errorf("%s is invalid: %v", modulePathLocation, err)
 	}
 	r := modulePathEscaped
 	for {

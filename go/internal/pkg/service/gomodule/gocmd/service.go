@@ -225,8 +225,7 @@ func (s *Service) getGoModuleAndIndexIfNeeded(ctx context.Context, tempGoEnv *te
 			return
 		}
 	} else if info.Version != moduleVersion.Version {
-		err = fmt.Errorf(".info file created by %s command has version %#v that is unexpectedly inconsistent with the requested version",
-			formatArgs(args), info.Version)
+
 		return
 	}
 	goModFD, err := newSharedFDOpen(downloadInfo.GoMod)
