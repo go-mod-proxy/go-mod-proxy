@@ -12,7 +12,7 @@ require (
 	github.com/gorilla/mux v1.7.4
 	github.com/hashicorp/go-cleanhttp v0.5.2
 	github.com/jbrekelmans/go-lib v0.0.0-20200829030453-658bbaa409c8
-	github.com/sirupsen/logrus v1.6.0
+	github.com/sirupsen/logrus v1.8.1
 	golang.org/x/mod v0.4.3-0.20210323215154-1cc8812c1740
 	golang.org/x/net v0.0.0-20210503060351-7fd8e65b6420
 	golang.org/x/oauth2 v0.0.0-20210427180440-81ed05c6b58c
