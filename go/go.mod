@@ -9,7 +9,7 @@ require (
 	github.com/bradleyfalzon/ghinstallation v1.1.1
 	github.com/google/go-github/v32 v32.1.0
 	github.com/googleapis/gax-go/v2 v2.0.5
-	github.com/gorilla/mux v1.7.4
+	github.com/gorilla/mux v1.8.0
 	github.com/hashicorp/go-cleanhttp v0.5.2
 	github.com/jbrekelmans/go-lib v0.0.0-20200829030453-658bbaa409c8
 	github.com/sirupsen/logrus v1.8.1
