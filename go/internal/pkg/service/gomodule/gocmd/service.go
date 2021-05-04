@@ -44,11 +44,12 @@ type goModuleInfo struct {
 	Info  string
 	GoMod string
 	// Zip is the path to a file containing Zip file
-	Zip      string
-	Dir      string
-	Sum      string
-	Time     time.Time
-	GoModSum string
+	Zip       string
+	Dir       string
+	Sum       string
+	Time      time.Time
+	GoModSum  string
+	GoVersion string
 }
 
 type ServiceOptions struct {
