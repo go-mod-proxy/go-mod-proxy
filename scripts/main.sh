@@ -23,7 +23,7 @@ get_go_version() {
 build() {
   local GO_VERSION_MINOR
   GO_VERSION_MINOR=$(get_go_version)
-  if [[ ${GO_VERSION_MINOR} -ne 14 ]]; then
+  if [[ ${GO_VERSION_MINOR} -ne 16 ]]; then
     1>&2 echo "unsupported go version 1.${GO_VERSION_MINOR}"
     return 1
   fi
@@ -42,7 +42,7 @@ build() {
 run-go() {
   local GO_VERSION_MINOR
   GO_VERSION_MINOR=$(get_go_version)
-  if [[ ${GO_VERSION_MINOR} -ne 14 ]]; then
+  if [[ ${GO_VERSION_MINOR} -ne 16 ]]; then
     1>&2 echo "unsupported go version 1.${GO_VERSION_MINOR}"
     return 1
   fi
@@ -60,7 +60,7 @@ run-go() {
 test() {
   local GO_VERSION_MINOR
   GO_VERSION_MINOR=$(get_go_version)
-  if [[ ${GO_VERSION_MINOR} -ne 14 ]]; then
+  if [[ ${GO_VERSION_MINOR} -ne 16 ]]; then
     1>&2 echo "unsupported go version 1.${GO_VERSION_MINOR}"
     return 1
   fi
