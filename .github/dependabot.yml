@@ -4,5 +4,6 @@ version: 2
 updates:
   - package-ecosystem: "gomod"
     directory: "/go"
+    open-pull-requests-limit: 15
     schedule:
       interval: "daily"
