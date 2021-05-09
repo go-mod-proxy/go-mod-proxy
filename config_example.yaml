@@ -9,7 +9,7 @@ gitHub:
           # The contents of file must encode a single PEM block with a private key type (i.e. "-----BEGIN RSA PRIVATE KEY-----")
           # that is the GitHub App private key.
           file: private-key.txt
-          
+
           # This secret can alternatively be sourced from an environment variable
           # by setting the envVar to the name of the environment variable:
           # envVar: MY_GITHUB_APP_PRIVATE_KEY
@@ -28,13 +28,13 @@ httpProxy:
   user: proxyBasicAuthUser
   password:
     file: http-proxy-password.txt
-    
+
     # This secret can alternatively be sourced from an environment variable
     # by setting the envVar to the name of the environment variable:
     # envVar: HTTP_PROXY_PASSWORD
 
     # Exactly one of file or envVar must be set to a non-null value.
-  
+
 # Controls the maximum amount of Go child processes that can be running at any one time
 maxChildProcesses: 30
 
@@ -63,7 +63,7 @@ publicModules:
     publicKey: 033de0ae+Ac4zctda0e5eza+HJyk9SxEdh+s3Ux18htTTAD8OuAn8
     # URL of the sum database. Required.
     url: https://sum.golang.org
-    
+
 storage:
   gcs:
     # When this module proxy server is running on Google Cloud infrastructure and Virtual Private Cloud Service Controls (VPCSC,
@@ -71,7 +71,7 @@ storage:
     # other HTTP requests to storage.googleapis.com _cannot_ go through the HTTP proxy.
     # More precisely, a request GET https://proxy.golang.org/google.golang.org/api/@v/v0.3.1.zip to the parent proxy
     # can return a 302 redirect to a signed GCS object URL (i.e. something of the form
-    #   https://storage.googleapis.com/proxy-golang-org-prod/23434e8d708c9bd3-google.golang.org:api-v0.3.1.zip?Expires=1600814778&GoogleAccessId=gcs-urlsigner-prod%40golang-modproxy.iam.gserviceaccount.com&Signature=...). 
+    #   https://storage.googleapis.com/proxy-golang-org-prod/23434e8d708c9bd3-google.golang.org:api-v0.3.1.zip?Expires=1600814778&GoogleAccessId=gcs-urlsigner-prod%40golang-modproxy.iam.gserviceaccount.com&Signature=...).
     # When subsequently a GET request of the signed GCS object URL is done, and VPCSC is enabled, the request has
     # to go via the HTTP proxy, but requests to https://storage.googleapis.com/ as part of this storage backend must not
     # go via the HTTP proxy.
@@ -85,7 +85,7 @@ sumDatabaseProxy:
   # When the Go toolchain is configured to use a module proxy and sum database <x>, but the module proxy
   # does not proxy sum database <x>, then the Go toolchain will attempt to connect to sum database <x>
   # directly unless the module proxy does not respond with status 404 or 410 to the GET /sumdb/supported endpoint.
-  # This module proxy server responds with 410 to the GET /sumdb/supported endpoint if and only if 
+  # This module proxy server responds with 410 to the GET /sumdb/supported endpoint if and only if
   # discourageClientDirectSumDatabaseConnections is false.
   # Defaults to false.
   # Performance of clients such as the Go toolchain can improve because clients can be told to skip attempting to connect directly
@@ -101,3 +101,6 @@ sumDatabaseProxy:
     # Configures the set of sum databases proxied by this module proxy server.
     # See https://go.googlesource.com/proposal/+/master/design/25530-sumdb.md#proxying-a-checksum-database
     - <<: *googleSumDatabase
+
+tls:
+  minVersion: 'TLS1.3'
