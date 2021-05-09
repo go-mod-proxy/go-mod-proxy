@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -68,7 +69,14 @@ func Run(ctx context.Context, opts *CLI) error {
 	if cfg.ClientAuth.Enabled && (cfg.ClientAuth.Authenticators == nil || cfg.ClientAuth.Authenticators.AccessToken == nil) {
 		return fmt.Errorf("invalid configuration: if .clientAuth.enabled is true then .clientAuth.authenticators.accessToken must not be nil")
 	}
+	tlsClientConfig := &tls.Config{}
+	if cfg.TLS != nil && cfg.TLS.MinVersion != 0 {
+		tlsClientConfig.MinVersion = uint16(cfg.TLS.MinVersion)
+	} else {
+		tlsClientConfig.MinVersion = tls.VersionTLS13
+	}
 	httpTransport := cleanhttp.DefaultPooledTransport()
+	httpTransport.TLSClientConfig = tlsClientConfig
 	httpProxyInfo, err := config.GetHTTPProxyInfoAndUnsetEnviron(cfg)
 	if err != nil {
 		return err
@@ -85,6 +93,7 @@ func Run(ctx context.Context, opts *CLI) error {
 	}
 	httpTransportBypassProxy := cleanhttp.DefaultPooledTransport()
 	httpTransportBypassProxy.Proxy = nil
+	httpTransportBypassProxy.TLSClientConfig = tlsClientConfig
 	httpClientBypassProxy := &http.Client{
 		Transport: httpTransportBypassProxy,
 	}

@@ -2,6 +2,7 @@ package config
 
 import (
 	"crypto/rsa"
+	"crypto/tls"
 	"fmt"
 	"net/url"
 	"strings"
@@ -65,6 +66,7 @@ type Config struct {
 	PublicModules     PublicModules            `yaml:"publicModules"`
 	Storage           *Storage                 `yaml:"storage"`
 	SumDatabaseProxy  *SumDatabaseProxy        `yaml:"sumDatabaseProxy"`
+	TLS               *TLS                     `yaml:"tls"`
 }
 
 type GCEInstanceIdentityAuthenticator struct {
@@ -157,4 +159,30 @@ type SumDatabaseProxy struct {
 	DiscourageClientDirectSumDatabaseConnections bool `yaml:"discourageClientDirectSumDatabaseConnections"`
 
 	SumDatabases []*SumDatabaseElement `yaml:"sumDatabases"`
+}
+
+type TLS struct {
+	MinVersion TLSVersion `yaml:"minVersion"`
+}
+
+type TLSVersion uint16
+
+func (t *TLSVersion) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	var s string
+	if err := unmarshal(&s); err != nil {
+		return err
+	}
+	switch strings.ToUpper(s) {
+	case "TLS1.0":
+		*t = tls.VersionTLS10
+	case "TLS1.1":
+		*t = tls.VersionTLS11
+	case "TLS1.2":
+		*t = tls.VersionTLS12
+	case "TLS1.3":
+		*t = tls.VersionTLS13
+	default:
+		return fmt.Errorf(`value must be a string case-insensitive equal to one of "TLS1.0", "TLS1.1", "TLS1.2" and "TLS1.3"`)
+	}
+	return nil
 }

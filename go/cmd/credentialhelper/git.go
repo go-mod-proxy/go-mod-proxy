@@ -24,7 +24,7 @@ func runGit(ctx context.Context, goModulePath string, port int, args []string) e
 	}
 	_ = os.Stdin.Close()
 	if !util.PathIsLexicalDescendant(goModulePath, c.Host+"/"+c.Path) {
-		return fmt.Errorf("stdin (hosst = %#v, path = %#v) is unexpectedly inconsistent with Go module path flag %#v", c.Host,
+		return fmt.Errorf("stdin (host = %#v, path = %#v) is unexpectedly inconsistent with Go module path flag %#v", c.Host,
 			c.Path, goModulePath)
 	}
 	respBody := &credentialhelpergit.UserPassword{}
