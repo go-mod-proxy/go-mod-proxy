@@ -67,13 +67,13 @@ func NewServer(opts ServerOptions) (*Server, error) {
 	if opts.Transport == nil {
 		return nil, fmt.Errorf("opts.Transport must not be nil")
 	}
-	router := mux.NewRouter().UseEncodedPath().SkipClean(true)
 	s := &Server{
 		accessTokenAuthenticator: opts.AccessTokenAuthenticator,
 		identityStore:            opts.IdentityStore,
 		realm:                    opts.Realm,
-		router:                   router,
 	}
+	s.router = mux.NewRouter().UseEncodedPath().SkipClean(true)
+	s.router.Use(servercommon.LoggingMiddleware(log.StandardLogger(), log.InfoLevel, "request"))
 	var accessTokenAuthenticatorFunc func(w http.ResponseWriter, req *http.Request) *serviceauth.Identity
 	authRouter := s.router.PathPrefix("/auth/").Subrouter()
 	if opts.ClientAuthEnabled {
@@ -105,7 +105,7 @@ func NewServer(opts ServerOptions) (*Server, error) {
 		}
 	}
 	_, err := servergosumdbproxy.NewServer(servergosumdbproxy.ServerOptions{
-		ParentRouter:     router,
+		ParentRouter:     s.router,
 		SumDatabaseProxy: opts.SumDatabaseProxy,
 		Transport:        opts.Transport,
 	})
