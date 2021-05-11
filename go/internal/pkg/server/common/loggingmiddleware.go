@@ -48,7 +48,7 @@ func newInstrumentedResponseWriter(w http.ResponseWriter) *instrumentedResponseW
 }
 
 func (i *instrumentedResponseWriter) Header() http.Header {
-	return i.Header()
+	return i.w.Header()
 }
 
 func (i *instrumentedResponseWriter) WriteHeader(statusCode int) {
