@@ -85,7 +85,7 @@ func (s *Server) post(w http.ResponseWriter, req *http.Request) {
 		}
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(UserPassword{
+		_ = json.NewEncoder(w).Encode(UserPassword{
 			User:     "x-access-token",
 			Password: token,
 		})
@@ -94,7 +94,6 @@ func (s *Server) post(w http.ResponseWriter, req *http.Request) {
 	error := fmt.Sprintf("TODO implement a mechanism to retrieve credentials for non-GitHub repositories (%#v)", goModulePath)
 	log.Debugf("git credential helper server: %s", error)
 	http.Error(w, error, http.StatusInternalServerError)
-	return
 }
 
 type UserPassword struct {

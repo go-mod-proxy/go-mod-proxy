@@ -19,6 +19,17 @@ jobs:
       - name: Build
         run: ./scripts/main.sh build
 
+      - name: "🧐 Lint"
+        uses: golangci/golangci-lint-action@v2
+        with:
+          # Possible flags to set in args are documented here: https://golangci-lint.run/usage/configuration/
+          args: --timeout 10m
+          skip-build-cache: true
+          skip-go-installation: true
+          skip-pkg-cache: true
+          version: v1.29
+          working-directory: go
+
       - name: Docker Login
         uses: docker/login-action@v1
         with:
@@ -31,7 +42,7 @@ jobs:
           IMAGE=jbrekelmans/go-module-proxy:$GITHUB_SHA_SHORT
           docker tag jbrekelmans/go-module-proxy:latest "${IMAGE}"
           docker push "${IMAGE}"
-      
+
       - name: Docker Push (latest)
         if: ${{ github.ref == 'ref/head/master' }}
         run: |

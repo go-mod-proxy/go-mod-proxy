@@ -23,6 +23,7 @@ func (s *Service) runCmd(ctx context.Context, t *tempGoEnv, args []string) (stdo
 		return
 	}
 	err = cmd.Wait()
+	cmdStdoutStderr.done()
 	stdout = cmdStdoutStderr.stdout()
 	strLog = cmdStdoutStderr.getLog()
 	if err != nil {
@@ -82,16 +83,12 @@ func (c *cmdStdoutStderr) done() {
 }
 
 func (c *cmdStdoutStderr) getLog() string {
-	return string(c.log.Bytes())
+	return c.log.String()
 }
 
 func (c *cmdStdoutStderr) register(cmd *exec.Cmd) {
 	cmd.Stdout = newCmdStdoutStderrWriter(c, stdout)
 	cmd.Stderr = newCmdStdoutStderrWriter(c, stderr)
-}
-
-func (c *cmdStdoutStderr) stderr() []byte {
-	return c.perFDStates[int(stderr)].data
 }
 
 func (c *cmdStdoutStderr) stdout() []byte {
@@ -118,7 +115,6 @@ func (c *cmdStdoutStderr) write(fd wellKnownFileDescriptor, p []byte) {
 		perFDState.scanStartPos = i + 1
 		fmt.Fprintf(&c.log, "%s: %s\n", fd.String(), string(line))
 	}
-	return
 }
 
 type cmdStdoutStderrWriter struct {
