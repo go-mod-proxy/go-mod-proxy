@@ -33,6 +33,9 @@ import (
 	servicestoragegcs "github.com/go-mod-proxy/go/internal/pkg/service/storage/gcs"
 )
 
+// Value of http.Server.MaxHeaderBytes
+const maxHeaderBytes = 5 * (1 << 10) // 5 Kibibytes (KiB)
+
 // CLI is a type reflected by "github.com/alecthomas/kong" that configures the CLI command for the client forward proxy.
 type CLI struct {
 	ConfigFile           string `required type:"existingfile" help:"Name of the YAML config file"`
@@ -261,7 +264,11 @@ func Run(ctx context.Context, opts *CLI) error {
 	if err != nil {
 		return err
 	}
-	err = http.ListenAndServe(fmt.Sprintf("0.0.0.0:%d", opts.Port), server)
+	err = (&http.Server{
+		Addr:           fmt.Sprintf("0.0.0.0:%d", opts.Port),
+		Handler:        server,
+		MaxHeaderBytes: maxHeaderBytes,
+	}).ListenAndServe()
 	if err != http.ErrServerClosed {
 		return err
 	}
