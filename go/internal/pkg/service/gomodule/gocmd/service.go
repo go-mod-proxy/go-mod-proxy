@@ -886,9 +886,7 @@ func (s *Service) notFoundOptimizations(modulePath string) (err error) {
 				return
 			}
 			// One slash
-		} else {
-			// No slashes
-		}
+		} // No slashes
 		err = gomoduleservice.NewErrorf(gomoduleservice.NotFound, `invalid github.com import path %#v`, modulePath)
 		return
 	}

@@ -37,10 +37,6 @@ func (m *maxParallelismResourcePool) acquire(ctx context.Context) (maxParallelis
 	return r, nil
 }
 
-func (m *maxParallelismResourcePool) len() int {
-	return cap(m.c)
-}
-
 func (m *maxParallelismResourcePool) newMaxParallelismResource() maxParallelismResource {
 	released := false
 	r := func() {
@@ -49,16 +45,6 @@ func (m *maxParallelismResourcePool) newMaxParallelismResource() maxParallelismR
 		}
 		released = true
 		m.c <- struct{}{}
-	}
-	return r
-}
-
-func (m *maxParallelismResourcePool) tryAcquire() maxParallelismResource {
-	r := m.newMaxParallelismResource()
-	select {
-	case <-m.c:
-	default:
-		return nil
 	}
 	return r
 }

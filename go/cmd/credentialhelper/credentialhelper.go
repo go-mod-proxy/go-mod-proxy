@@ -6,6 +6,7 @@ import (
 )
 
 // CLI is a type reflected by "github.com/alecthomas/kong" that configures the CLI command for the client forward proxy.
+//nolint:structtag // linter does not like the syntax required by the kong package
 type CLI struct {
 	GoModulePath string   `required help:"Go module path"`
 	Port         int      `required help:"Port on 127.0.0.1 that the server is listening on"`

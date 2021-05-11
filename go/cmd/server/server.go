@@ -37,6 +37,7 @@ import (
 const maxHeaderBytes = 5 * (1 << 10) // 5 Kibibytes (KiB)
 
 // CLI is a type reflected by "github.com/alecthomas/kong" that configures the CLI command for the client forward proxy.
+//nolint:structtag // linter does not like the syntax required by the kong package
 type CLI struct {
 	ConfigFile           string `required type:"existingfile" help:"Name of the YAML config file"`
 	Port                 int    `required help:"Port to listen on"`
@@ -117,12 +118,18 @@ func Run(ctx context.Context, opts *CLI) error {
 		if err != nil {
 			return err
 		}
-		googleHTTPClient = oauth2.NewClient(nil, googleCredentials.TokenSource)
-		// A slightly hacky way to reuse httpClient's Transport instead of having another one.
-		googleHTTPClient.Transport.(*oauth2.Transport).Base = httpClient.Transport
-		googleHTTPClientBypassProxy = oauth2.NewClient(nil, googleCredentials.TokenSource)
-		// A slightly hacky way to reuse httpClient's Transport instead of having another one.
-		googleHTTPClientBypassProxy.Transport.(*oauth2.Transport).Base = httpClientBypassProxy.Transport
+		googleHTTPClient = &http.Client{
+			Transport: &oauth2.Transport{
+				Base:   httpClient.Transport,
+				Source: googleCredentials.TokenSource,
+			},
+		}
+		googleHTTPClientBypassProxy = &http.Client{
+			Transport: &oauth2.Transport{
+				Base:   httpClientBypassProxy.Transport,
+				Source: googleCredentials.TokenSource,
+			},
+		}
 	}
 	var storage servicestorage.Storage
 	if cfg.Storage.GCS != nil {
@@ -167,6 +174,9 @@ func Run(ctx context.Context, opts *CLI) error {
 			cfg.ClientAuth.Authenticators.AccessToken.TimeToLive,
 			identityStore,
 		)
+		if err != nil {
+			return err
+		}
 		if !enableGCEAuth {
 			log.Infof("not enabling GCE authentication because .clientAuth.enabled is not true or no element of .clientAuth.identities in %#v has .gceInstanceIdentityBinding != null",
 				opts.ConfigFile)
