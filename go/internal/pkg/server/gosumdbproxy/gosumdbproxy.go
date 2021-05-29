@@ -35,16 +35,17 @@ func NewServer(opts ServerOptions) (*Server, error) {
 	}
 	for i, sumDBElement := range opts.SumDatabaseProxy.SumDatabases {
 		// Perform these checks because we don't want to rely on reverseProxy semantics
-		if sumDBElement.URLParsed.RawQuery != "" {
-			return nil, fmt.Errorf("opts.SumDatabaseProxy.SumDatabases[%d].URLParsed.RawQuery must be empty", i)
-		}
-		if sumDBElement.URLParsed.ForceQuery {
-			return nil, fmt.Errorf("opts.SumDatabaseProxy.SumDatabases[%d].URLParsed.ForceQuery must be false", i)
-		}
-		if sumDBElement.URLParsed.Fragment != "" {
+		urlParsed := sumDBElement.URLParsed
+		if urlParsed.Fragment != "" {
 			return nil, fmt.Errorf("opts.SumDatabaseProxy.SumDatabases[%d].URLParsed.Fragment must be empty", i)
 		}
-		reverseProxy := httputil.NewSingleHostReverseProxy(sumDBElement.URLParsed)
+		reverseProxy := httputil.NewSingleHostReverseProxy(urlParsed)
+		director1 := reverseProxy.Director
+		director2 := func(req *http.Request) {
+			director1(req)
+			req.Host = urlParsed.Host
+		}
+		reverseProxy.Director = director2
 		reverseProxy.ModifyResponse = s.reverseProxyModifyResponse
 		reverseProxy.Transport = opts.Transport
 		// TODO set reverseProxy.BufferPool to improve buffer sharing
@@ -107,7 +108,6 @@ func (s *Server) serveHTTP(w http.ResponseWriter, req *http.Request) {
 		w.WriteHeader(status)
 		return
 	}
-	log.Tracef("%s %s (sum database = %#v)", req.Method, req.URL.String(), sumDBName)
 	reqClone.URL.Path = pathSuffix
 	reqClone.URL.RawPath = escapedPathSuffix
 	reverseProxy.ServeHTTP(w, reqClone)
