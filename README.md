@@ -21,7 +21,7 @@ The `.info`, `.zip` and `.mod` endpoints are strongly consistent. More formally:
 1. Given a copy of a module version `<m>@<v>`: `.info`, `.zip` and `.mod` as reported by GET `<m>/v@/<v>.info`, `<m>/v@/<v>.zip` and `<m>/v@/<v>.mod` requests, respectively, reflect that copy and at no point (in the future) will GET `<m>/v@/<v>.info`, `<m>/v@/<v>.zip` and `<m>/v@/<v>.mod` requests reflect a different copy.
 2. Given a module version `<m>@<v>`: if any one of `.info`, `.zip` and `.mod` as reported by GET `<m>/v@<v>.info`, `<m>/v@/<v>.zip` and `<m>/v@/<v>.mod` requests, respectively, reflect a copy of the module version then all future GET `<m>/v@/<v>.info`, `<m>/v@/<v>.zip` and `<m>/v@/<v>.mod` requests reflect that copy.
 
-Read after list is strongly consistent:
+Read after list is strongly consistent (if flag `--read-after-list-is-strongly-consistent` is set):
 1. If a GET `<m>/@list` request lists version `<v>` then `.info`, `.zip` and `.mod` as reported by GET `<m>/v@/<v>.info`, `<m>/v@/<v>.zip` and `<m>/v@/<v>.mod` requests immediately reflect a copy of the module version.
 
 Similarly, list after read is strongly consistent (but list may return partial results in case of errors and list does not return pseudo-versions).
