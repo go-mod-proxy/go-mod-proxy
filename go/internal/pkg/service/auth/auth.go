@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/go-mod-proxy/go/internal/pkg/config"
+	"github.com/go-mod-proxy/go-mod-proxy/go/internal/pkg/config"
 )
 
 var ErrNotFound = errors.New("not found")

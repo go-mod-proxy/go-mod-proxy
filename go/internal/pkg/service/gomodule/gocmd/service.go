@@ -18,12 +18,12 @@ import (
 	log "github.com/sirupsen/logrus"
 	module "golang.org/x/mod/module"
 
-	"github.com/go-mod-proxy/go/internal/pkg/config"
-	"github.com/go-mod-proxy/go/internal/pkg/git"
-	"github.com/go-mod-proxy/go/internal/pkg/modproxyclient"
-	gomoduleservice "github.com/go-mod-proxy/go/internal/pkg/service/gomodule"
-	"github.com/go-mod-proxy/go/internal/pkg/service/storage"
-	"github.com/go-mod-proxy/go/internal/pkg/util"
+	"github.com/go-mod-proxy/go-mod-proxy/go/internal/pkg/config"
+	"github.com/go-mod-proxy/go-mod-proxy/go/internal/pkg/git"
+	"github.com/go-mod-proxy/go-mod-proxy/go/internal/pkg/modproxyclient"
+	gomoduleservice "github.com/go-mod-proxy/go-mod-proxy/go/internal/pkg/service/gomodule"
+	"github.com/go-mod-proxy/go-mod-proxy/go/internal/pkg/service/storage"
+	"github.com/go-mod-proxy/go-mod-proxy/go/internal/pkg/util"
 )
 
 const (
@@ -40,7 +40,7 @@ type goModuleInfo struct {
 	} // error loading module
 	Version  string
 	Versions []string
-	// Info is the path to a file containing JSON marshalling of a "github.com/go-mod-proxy/go/internal/app/service/gomodule".Info value.
+	// Info is the path to a file containing JSON marshalling of a "github.com/go-mod-proxy/go-mod-proxy/go/internal/app/service/gomodule".Info value.
 	Info  string
 	GoMod string
 	// Zip is the path to a file containing Zip file
@@ -665,13 +665,103 @@ func (s *Service) List(ctx context.Context, modulePath string) (io.ReadCloser, e
 	if err := s.notFoundOptimizations(modulePath); err != nil {
 		return nil, err
 	}
-	versionMap := map[string]struct{}{}
-	if s.readAfterListIsStronglyConsistent {
-		if err := s.listWithStrongReadAfterListConsistency(ctx, modulePath, versionMap); err != nil {
+	privateModulesElement := s.getPrivateModulesElement(modulePath)
+	if privateModulesElement == nil && !s.readAfterListIsStronglyConsistent {
+		goListVersions, err := s.listViaParentProxy(ctx, modulePath)
+		if err != nil {
 			return nil, err
 		}
-	} else if err := s.listWithoutStrongReadAfterListConsistency(ctx, modulePath, versionMap); err != nil {
+		var sb strings.Builder
+		for _, version := range goListVersions {
+			sb.WriteString(version)
+			sb.WriteByte('\n')
+		}
+		return ioutil.NopCloser(strings.NewReader(sb.String())), nil
+	}
+	versionMap := map[string]struct{}{}
+	versionMapMutex := new(sync.Mutex)
+	errChan := make(chan error)
+	ctx, cancelFunc := context.WithCancel(ctx)
+	defer cancelFunc()
+	go s.listAddObjectNames(ctx, errChan, storageGoModObjNamePrefix+modulePath+"@", versionMap, versionMapMutex)
+	go s.listAddObjectNames(ctx, errChan, storageConcatObjNamePrefix+modulePath+"@", versionMap, versionMapMutex)
+	var goListVersions []string
+	go func() {
+		var err error
+		if privateModulesElement == nil {
+			goListVersions, err = s.listViaParentProxy(ctx, modulePath)
+		} else {
+			goListVersions, err = s.listGoCmd(ctx, modulePath)
+		}
+		errChan <- err
+	}()
+	var err error
+	// The constant 3 must be aligned with the number of Goroutines above, and each Goroutine must send on errChan exactly once.
+	for i := 0; i < 3; i++ {
+		err2 := <-errChan
+		if err2 != nil {
+			if err == nil {
+				err = err2
+				cancelFunc()
+			} else {
+				select {
+				case <-ctx.Done():
+					if err == ctx.Err() {
+						continue
+					}
+				default:
+				}
+				log.Errorf("got secondary error while listing versions: %v", err)
+			}
+		}
+	}
+	if err != nil {
 		return nil, err
+	}
+	if !s.readAfterListIsStronglyConsistent {
+		for _, version := range goListVersions {
+			versionMap[version] = struct{}{}
+		}
+	} else {
+		var waitGroup sync.WaitGroup
+		for _, version := range goListVersions {
+			versionMapMutex.Lock()
+			_, flag := versionMap[version]
+			versionMapMutex.Unlock()
+			if flag {
+				continue
+			}
+			version := version
+			runCmdResource, err := s.runCmdResourcePool.acquire(ctx)
+			if err != nil {
+				return nil, err
+			}
+			waitGroup.Add(1)
+			go func() {
+				defer runCmdResource.release()
+				defer waitGroup.Done()
+				tempGoEnv, err := s.newTempGoEnv()
+				if err != nil {
+					log.Error(err)
+					return
+				}
+				defer func() {
+					err := tempGoEnv.removeRef()
+					if err != nil {
+						log.Errorf("error removing tmpDir %#v of *tempGoEnv: %v", tempGoEnv.TmpDir, err)
+					}
+				}()
+				_, _, _, err = s.getGoModuleAndIndexIfNeeded(ctx, tempGoEnv, &module.Version{Path: modulePath, Version: version}, runCmdResource)
+				if err != nil {
+					log.Error(err)
+					return
+				}
+				versionMapMutex.Lock()
+				versionMap[version] = struct{}{}
+				versionMapMutex.Unlock()
+			}()
+		}
+		waitGroup.Wait()
 	}
 	var sb strings.Builder
 	for version := range versionMap {
@@ -795,113 +885,14 @@ func (s *Service) listGoCmdIndex(moduleVersion *module.Version) {
 	}
 }
 
-func (s *Service) listWithStrongReadAfterListConsistency(ctx context.Context, modulePath string, versionMap map[string]struct{}) error {
-	versionMapMutex := new(sync.Mutex)
-	errChan := make(chan error)
-	ctx, cancelFunc := context.WithCancel(ctx)
-	defer cancelFunc()
-	go s.listAddObjectNames(ctx, errChan, storageGoModObjNamePrefix+modulePath+"@", versionMap, versionMapMutex)
-	go s.listAddObjectNames(ctx, errChan, storageConcatObjNamePrefix+modulePath+"@", versionMap, versionMapMutex)
-	var goListVersions []string
-	go func() {
-		var err error
-		if privateModulesElement := s.getPrivateModulesElement(modulePath); privateModulesElement == nil {
-			// For public modules send a request to the parent proxy directly instead of via a "go list" command.
-			// This also avoids an unnecessary second request performed by a "go list" command when GET "/@v/list" returns zero versions.
-			goListVersions, err = modproxyclient.List(ctx, s.parentProxyURL, s.httpClient, modulePath)
-			if err == modproxyclient.ErrNotFound {
-				err = gomoduleservice.NewErrorf(gomoduleservice.NotFound, "%v", err)
-			}
-		} else {
-			goListVersions, err = s.listGoCmd(ctx, modulePath)
-		}
-		errChan <- err
-	}()
-	var err error
-	// The constant 3 must be aligned with the number of Goroutines above, and each Goroutine must send on errChan exactly once.
-	for i := 0; i < 3; i++ {
-		err2 := <-errChan
-		if err2 != nil {
-			if err == nil {
-				err = err2
-				cancelFunc()
-			} else {
-				select {
-				case <-ctx.Done():
-					if err == ctx.Err() {
-						continue
-					}
-				default:
-				}
-				log.Errorf("got secondary error while listing versions: %v", err)
-			}
-		}
+func (s *Service) listViaParentProxy(ctx context.Context, modulePath string) (goListVersions []string, err error) {
+	// For public modules send a request to the parent proxy directly instead of via a "go list" command.
+	// This also avoids an unnecessary second request performed by a "go list" command when GET "/@v/list" returns zero versions.
+	goListVersions, err = modproxyclient.List(ctx, s.parentProxyURL, s.httpClient, modulePath)
+	if err == modproxyclient.ErrNotFound {
+		err = gomoduleservice.NewErrorf(gomoduleservice.NotFound, "%v", err)
 	}
-	if err != nil {
-		return err
-	}
-	var waitGroup sync.WaitGroup
-	for _, version := range goListVersions {
-		versionMapMutex.Lock()
-		_, flag := versionMap[version]
-		versionMapMutex.Unlock()
-		if flag {
-			continue
-		}
-		version := version
-		runCmdResource, err := s.runCmdResourcePool.acquire(ctx)
-		if err != nil {
-			return err
-		}
-		waitGroup.Add(1)
-		go func() {
-			defer runCmdResource.release()
-			defer waitGroup.Done()
-			tempGoEnv, err := s.newTempGoEnv()
-			if err != nil {
-				log.Error(err)
-				return
-			}
-			defer func() {
-				err := tempGoEnv.removeRef()
-				if err != nil {
-					log.Errorf("error removing tmpDir %#v of *tempGoEnv: %v", tempGoEnv.TmpDir, err)
-				}
-			}()
-			_, _, _, err = s.getGoModuleAndIndexIfNeeded(ctx, tempGoEnv, &module.Version{Path: modulePath, Version: version}, runCmdResource)
-			if err != nil {
-				log.Error(err)
-				return
-			}
-			versionMapMutex.Lock()
-			versionMap[version] = struct{}{}
-			versionMapMutex.Unlock()
-		}()
-	}
-	waitGroup.Wait()
-	return nil
-}
-
-func (s *Service) listWithoutStrongReadAfterListConsistency(ctx context.Context, modulePath string, versionMap map[string]struct{}) error {
-	var err error
-	var goListVersions []string
-	if privateModulesElement := s.getPrivateModulesElement(modulePath); privateModulesElement == nil {
-		// For public modules send a request to the parent proxy directly instead of via a "go list" command.
-		// This also avoids an unnecessary second request performed by a "go list" command when GET "/@v/list" returns zero versions.
-		goListVersions, err = modproxyclient.List(ctx, s.parentProxyURL, s.httpClient, modulePath)
-		if err == modproxyclient.ErrNotFound {
-			err = gomoduleservice.NewErrorf(gomoduleservice.NotFound, "%v", err)
-		}
-	} else {
-		goListVersions, err = s.listGoCmd(ctx, modulePath)
-	}
-	if err != nil {
-		return err
-	}
-	for _, version := range goListVersions {
-		versionMap[version] = struct{}{}
-	}
-	return nil
+	return
 }
 
 func (s *Service) newTempGoEnv() (*tempGoEnv, error) {

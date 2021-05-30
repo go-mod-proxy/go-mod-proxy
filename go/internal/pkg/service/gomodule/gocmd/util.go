@@ -8,8 +8,8 @@ import (
 
 	"github.com/alessio/shellescape"
 
-	gomoduleservice "github.com/go-mod-proxy/go/internal/pkg/service/gomodule"
-	"github.com/go-mod-proxy/go/internal/pkg/service/storage"
+	gomoduleservice "github.com/go-mod-proxy/go-mod-proxy/go/internal/pkg/service/gomodule"
+	"github.com/go-mod-proxy/go-mod-proxy/go/internal/pkg/service/storage"
 )
 
 func fdSeekToStart(fd *os.File) error {

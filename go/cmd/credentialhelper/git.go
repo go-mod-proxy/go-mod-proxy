@@ -6,9 +6,9 @@ import (
 	"os"
 	"strings"
 
-	"github.com/go-mod-proxy/go/internal/pkg/git"
-	credentialhelpergit "github.com/go-mod-proxy/go/internal/pkg/server/credentialhelper/git"
-	"github.com/go-mod-proxy/go/internal/pkg/util"
+	"github.com/go-mod-proxy/go-mod-proxy/go/internal/pkg/git"
+	credentialhelpergit "github.com/go-mod-proxy/go-mod-proxy/go/internal/pkg/server/credentialhelper/git"
+	"github.com/go-mod-proxy/go-mod-proxy/go/internal/pkg/util"
 )
 
 func runGit(ctx context.Context, goModulePath string, port int, args []string) error {
