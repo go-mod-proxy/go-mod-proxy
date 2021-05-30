@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	internalhttpproxy "github.com/go-mod-proxy/go/internal/pkg/httpproxy"
+	internalhttpproxy "github.com/go-mod-proxy/go-mod-proxy/go/internal/pkg/httpproxy"
 )
 
 type Access int

@@ -18,12 +18,12 @@ import (
 	log "github.com/sirupsen/logrus"
 	module "golang.org/x/mod/module"
 
-	"github.com/go-mod-proxy/go/internal/pkg/config"
-	"github.com/go-mod-proxy/go/internal/pkg/git"
-	"github.com/go-mod-proxy/go/internal/pkg/modproxyclient"
-	gomoduleservice "github.com/go-mod-proxy/go/internal/pkg/service/gomodule"
-	"github.com/go-mod-proxy/go/internal/pkg/service/storage"
-	"github.com/go-mod-proxy/go/internal/pkg/util"
+	"github.com/go-mod-proxy/go-mod-proxy/go/internal/pkg/config"
+	"github.com/go-mod-proxy/go-mod-proxy/go/internal/pkg/git"
+	"github.com/go-mod-proxy/go-mod-proxy/go/internal/pkg/modproxyclient"
+	gomoduleservice "github.com/go-mod-proxy/go-mod-proxy/go/internal/pkg/service/gomodule"
+	"github.com/go-mod-proxy/go-mod-proxy/go/internal/pkg/service/storage"
+	"github.com/go-mod-proxy/go-mod-proxy/go/internal/pkg/util"
 )
 
 const (
@@ -40,7 +40,7 @@ type goModuleInfo struct {
 	} // error loading module
 	Version  string
 	Versions []string
-	// Info is the path to a file containing JSON marshalling of a "github.com/go-mod-proxy/go/internal/app/service/gomodule".Info value.
+	// Info is the path to a file containing JSON marshalling of a "github.com/go-mod-proxy/go-mod-proxy/go/internal/app/service/gomodule".Info value.
 	Info  string
 	GoMod string
 	// Zip is the path to a file containing Zip file

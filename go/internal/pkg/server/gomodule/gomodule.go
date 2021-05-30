@@ -13,10 +13,10 @@ import (
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/mod/module"
 
-	"github.com/go-mod-proxy/go/internal/pkg/config"
-	"github.com/go-mod-proxy/go/internal/pkg/server/common"
-	"github.com/go-mod-proxy/go/internal/pkg/service/auth"
-	servicegomodule "github.com/go-mod-proxy/go/internal/pkg/service/gomodule"
+	"github.com/go-mod-proxy/go-mod-proxy/go/internal/pkg/config"
+	"github.com/go-mod-proxy/go-mod-proxy/go/internal/pkg/server/common"
+	"github.com/go-mod-proxy/go-mod-proxy/go/internal/pkg/service/auth"
+	servicegomodule "github.com/go-mod-proxy/go-mod-proxy/go/internal/pkg/service/gomodule"
 )
 
 const (

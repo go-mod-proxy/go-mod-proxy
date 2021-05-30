@@ -10,7 +10,7 @@ import (
 	"gopkg.in/square/go-jose.v2"
 	"gopkg.in/square/go-jose.v2/jwt"
 
-	"github.com/go-mod-proxy/go/internal/pkg/service/auth"
+	"github.com/go-mod-proxy/go-mod-proxy/go/internal/pkg/service/auth"
 )
 
 type Authenticator struct {
