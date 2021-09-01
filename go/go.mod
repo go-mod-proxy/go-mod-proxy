@@ -3,7 +3,7 @@ module github.com/go-mod-proxy/go-mod-proxy/go
 go 1.16
 
 require (
-	cloud.google.com/go/storage v1.16.0
+	cloud.google.com/go/storage v1.16.1
 	github.com/alecthomas/kong v0.2.17
 	github.com/alessio/shellescape v1.4.1
 	github.com/bradleyfalzon/ghinstallation v1.1.1
@@ -15,8 +15,8 @@ require (
 	github.com/sirupsen/logrus v1.8.1
 	golang.org/x/mod v0.4.3-0.20210323215154-1cc8812c1740
 	golang.org/x/net v0.0.0-20210503060351-7fd8e65b6420
-	golang.org/x/oauth2 v0.0.0-20210615190721-d04028783cf1
-	google.golang.org/api v0.49.0
+	golang.org/x/oauth2 v0.0.0-20210805134026-6f1e6394065a
+	google.golang.org/api v0.54.0
 	gopkg.in/square/go-jose.v2 v2.6.0
 	gopkg.in/yaml.v2 v2.4.0
 )
