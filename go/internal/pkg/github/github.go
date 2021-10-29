@@ -9,8 +9,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/bradleyfalzon/ghinstallation"
-	"github.com/google/go-github/v32/github"
+	ghinstallation "github.com/bradleyfalzon/ghinstallation/v2"
+	"github.com/google/go-github/v39/github"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/go-mod-proxy/go-mod-proxy/go/internal/pkg/config"
