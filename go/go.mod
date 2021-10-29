@@ -11,7 +11,7 @@ require (
 	github.com/googleapis/gax-go/v2 v2.1.1
 	github.com/gorilla/mux v1.8.0
 	github.com/hashicorp/go-cleanhttp v0.5.2
-	github.com/jbrekelmans/go-lib v0.0.0-20200829030453-658bbaa409c8
+	github.com/jbrekelmans/go-lib v0.0.0-20211029231445-0171e093f34c
 	github.com/sirupsen/logrus v1.8.1
 	golang.org/x/mod v0.4.3-0.20210323215154-1cc8812c1740
 	golang.org/x/net v0.0.0-20210503060351-7fd8e65b6420
