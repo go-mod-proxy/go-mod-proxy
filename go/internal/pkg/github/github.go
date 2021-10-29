@@ -9,7 +9,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/bradleyfalzon/ghinstallation"
+	ghinstallation "github.com/bradleyfalzon/ghinstallation/v2"
 	"github.com/google/go-github/v32/github"
 	log "github.com/sirupsen/logrus"
 
