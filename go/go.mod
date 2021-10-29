@@ -6,7 +6,7 @@ require (
 	cloud.google.com/go/storage v1.18.2
 	github.com/alecthomas/kong v0.2.17
 	github.com/alessio/shellescape v1.4.1
-	github.com/google/go-github/v32 v32.1.0
+	github.com/bradleyfalzon/ghinstallation/v2 v2.0.3
 	github.com/googleapis/gax-go/v2 v2.1.1
 	github.com/gorilla/mux v1.8.0
 	github.com/hashicorp/go-cleanhttp v0.5.2
@@ -22,7 +22,6 @@ require (
 
 require (
 	cloud.google.com/go v0.97.0 // indirect
-	github.com/bradleyfalzon/ghinstallation/v2 v2.0.3
 	github.com/census-instrumentation/opencensus-proto v0.2.1 // indirect
 	github.com/cespare/xxhash v1.1.0 // indirect
 	github.com/cncf/udpa/go v0.0.0-20201120205902-5459f2c99403 // indirect
@@ -33,7 +32,7 @@ require (
 	github.com/golang/groupcache v0.0.0-20200121045136-8c9f03a8e57e // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/google/go-cmp v0.5.6 // indirect
-	github.com/google/go-github/v39 v39.0.0 // indirect
+	github.com/google/go-github/v39 v39.2.0
 	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	go.opencensus.io v0.23.0 // indirect

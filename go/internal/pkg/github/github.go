@@ -10,7 +10,7 @@ import (
 	"time"
 
 	ghinstallation "github.com/bradleyfalzon/ghinstallation/v2"
-	"github.com/google/go-github/v32/github"
+	"github.com/google/go-github/v39/github"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/go-mod-proxy/go-mod-proxy/go/internal/pkg/config"
