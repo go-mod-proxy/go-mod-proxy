@@ -37,7 +37,10 @@ func (s *Service) List(ctx context.Context, modulePath string) (io.ReadCloser, e
 	}
 	versionMap := map[string]struct{}{}
 	versionMapMutex := new(sync.Mutex)
-	errChan := make(chan error)
+	const errChanSize = 3
+	// The constant 3 must be aligned with the number of Goroutines started (before reading from errChan),
+	// and each such Goroutine  must send on errChan exactly once.
+	errChan := make(chan error, errChanSize)
 	ctx, cancelFunc := context.WithCancel(ctx)
 	defer cancelFunc()
 	go s.listAddObjectNames(ctx, errChan, storageGoModObjNamePrefix+modulePath+"@", versionMap, versionMapMutex)
@@ -53,8 +56,7 @@ func (s *Service) List(ctx context.Context, modulePath string) (io.ReadCloser, e
 		errChan <- err
 	}()
 	var err error
-	// The constant 3 must be aligned with the number of Goroutines above, and each Goroutine must send on errChan exactly once.
-	for i := 0; i < 3; i++ {
+	for i := 0; i < errChanSize; i++ {
 		err2 := <-errChan
 		if err2 != nil {
 			if err == nil {
