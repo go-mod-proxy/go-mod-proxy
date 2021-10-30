@@ -96,12 +96,6 @@ func Run(ctx context.Context, opts *CLI) error {
 	httpClient := &http.Client{
 		Transport: httpTransport,
 	}
-	httpTransportBypassProxy := cleanhttp.DefaultPooledTransport()
-	httpTransportBypassProxy.Proxy = nil
-	httpTransportBypassProxy.TLSClientConfig = tlsClientConfig
-	httpClientBypassProxy := &http.Client{
-		Transport: httpTransportBypassProxy,
-	}
 	var enableGCEAuth bool
 	if cfg.ClientAuth.Enabled {
 		for _, identity := range cfg.ClientAuth.Identities {
@@ -113,7 +107,6 @@ func Run(ctx context.Context, opts *CLI) error {
 	}
 	var googleCredentials *google.Credentials
 	var googleHTTPClient *http.Client
-	var googleHTTPClientBypassProxy *http.Client
 	if enableGCEAuth || cfg.Storage.GCS != nil {
 		googleCredentials, err = google.FindDefaultCredentials(ctx, "https://www.googleapis.com/auth/cloud-platform")
 		if err != nil {
@@ -125,19 +118,10 @@ func Run(ctx context.Context, opts *CLI) error {
 				Source: googleCredentials.TokenSource,
 			},
 		}
-		googleHTTPClientBypassProxy = &http.Client{
-			Transport: &oauth2.Transport{
-				Base:   httpClientBypassProxy.Transport,
-				Source: googleCredentials.TokenSource,
-			},
-		}
 	}
 	var storage servicestorage.Storage
 	if cfg.Storage.GCS != nil {
 		storageHTTPClient := googleHTTPClient
-		if cfg.Storage.GCS.BypassHTTPProxy {
-			storageHTTPClient = googleHTTPClientBypassProxy
-		}
 		gcsClient, err := gcs.NewClient(ctx, option.WithHTTPClient(storageHTTPClient))
 		if err != nil {
 			return err
