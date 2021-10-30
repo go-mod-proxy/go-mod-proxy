@@ -83,13 +83,7 @@ func (s *Service) List(ctx context.Context, modulePath string) (io.ReadCloser, e
 		}
 	} else {
 		var waitGroup sync.WaitGroup
-		for _, version := range goListVersions {
-			versionMapMutex.Lock()
-			_, flag := versionMap[version]
-			versionMapMutex.Unlock()
-			if flag {
-				continue
-			}
+		for _, version := range moveSliceElementsThatAreInMapToBack(goListVersions, versionMap) {
 			version := version
 			runCmdResource, err := s.runCmdResourcePool.acquire(ctx)
 			if err != nil {
@@ -252,4 +246,27 @@ func (s *Service) listViaParentProxy(ctx context.Context, modulePath string) (go
 		err = gomoduleservice.NewErrorf(gomoduleservice.NotFound, "%v", err)
 	}
 	return
+}
+
+// moveSliceElementsThatAreInMapToBack swaps elements in s so that all elements in m are in a continuous subslice ending at the end of s.
+// The relative ordering of elements is not preserved.
+// moveSliceElementsThatAreInMapToBack returns a subslice of s so that no elemenets in the subslice are in m.
+func moveSliceElementsThatAreInMapToBack(s []string, m map[string]struct{}) []string {
+	i := 0
+	end := len(s)
+	for ; i < end; {
+		if _, ok := m[s[i]]; ok {
+			swap(s, i, end - 1)
+			end--
+		} else {
+			i++
+		}
+	}
+	return s[:end]
+}
+
+func swap(s []string, i, j int) {
+	t := s[i]
+	s[i] = s[j]
+	s[j] = t
 }
