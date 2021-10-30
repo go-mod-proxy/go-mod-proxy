@@ -37,7 +37,7 @@ jobs:
           skip-build-cache: true
           skip-go-installation: true
           skip-pkg-cache: true
-          version: v1.29
+          version: latest
           working-directory: go
 
       - name: "🔐 Docker Login"
