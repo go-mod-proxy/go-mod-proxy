@@ -223,6 +223,12 @@ func (s *Service) getGoModuleAndIndexIfNeeded(ctx context.Context, tempGoEnv *te
 		return
 	}
 
+	if info.Time == (time.Time{}) {
+		err = fmt.Errorf(".info file created by %s command contains JSON object that does not set .Time or sets .Time to an invalid value",
+			formatArgs(args))
+		return
+	}
+
 	// Do not index non-canonical versions. This should never happen but it's easier to reject, than to prove we never corrupted
 	// our append-only storage.
 	if info.Version == "" {
