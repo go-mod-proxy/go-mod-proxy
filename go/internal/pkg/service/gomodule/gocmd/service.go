@@ -222,16 +222,25 @@ func (s *Service) getGoModuleAndIndexIfNeeded(ctx context.Context, tempGoEnv *te
 		err = fmt.Errorf(`unexpected error JSON-unmarshalling contents of .info file created by %s command: %w`, formatArgs(args), err)
 		return
 	}
-	if moduleVersion.Version == "latest" {
-		if info.Version == "latest" {
-			err = fmt.Errorf(".info file created by %s command has unexpected version %#v", formatArgs(args), info.Version)
-			return
-		}
-	} else if info.Version != moduleVersion.Version {
-		err = fmt.Errorf(".info file created by %s command has version %#v that is unexpectedly inconsistent with the requested version",
-			formatArgs(args), info.Version)
+
+	if info.Time == (time.Time{}) {
+		err = fmt.Errorf(".info file created by %s command contains JSON object that does not set .Time or sets .Time to an invalid value",
+			formatArgs(args))
 		return
 	}
+
+	// Do not index non-canonical versions. This should never happen but it's easier to reject, than to prove we never corrupted
+	// our append-only storage.
+	if info.Version == "" {
+		err = fmt.Errorf(".info file created by %s command contains JSON object that does not set .Version (to a non-empty string)",
+			formatArgs(args))
+		return
+	} else if infoVersionCanonical := module.CanonicalVersion(info.Version); infoVersionCanonical != info.Version {
+		err = fmt.Errorf(".info file created by %s command contains JSON object with .Version = %#v that is not canonical (%#v)",
+			formatArgs(args), info.Version, infoVersionCanonical)
+		return
+	}
+
 	goModFD, err := newSharedFDOpen(downloadInfo.GoMod)
 	if err != nil {
 		err = fmt.Errorf(`unexpected error opening .mod file created by %s command: %w`, formatArgs(args), err)
@@ -302,18 +311,20 @@ func (s *Service) GoMod(ctx context.Context, moduleVersion *module.Version) (dat
 	if err != nil {
 		return
 	}
-	if moduleVersion.Version == "latest" {
-		err = gomoduleservice.NewErrorf(gomoduleservice.NotFound, `module version "latest" is invalid`)
+	fSeeStorage, err := s.versionPreamble(moduleVersion.Version, false)
+	if err != nil {
 		return
 	}
-	data, err = s.storage.GetObject(ctx, storageGoModObjNamePrefix+moduleVersion.Path+"@"+moduleVersion.Version)
-	if err == nil || !storage.ErrorIsCode(err, storage.NotFound) {
-		err = mapStorageError(err)
-		return
-	}
-	data, err = s.goModFromConcatObj(ctx, moduleVersion)
-	if err == nil || !gomoduleservice.ErrorIsCode(err, gomoduleservice.NotFound) {
-		return
+	if fSeeStorage {
+		data, err = s.storage.GetObject(ctx, storageGoModObjNamePrefix+moduleVersion.Path+"@"+moduleVersion.Version)
+		if err == nil || !storage.ErrorIsCode(err, storage.NotFound) {
+			err = mapStorageError(err)
+			return
+		}
+		data, err = s.goModFromConcatObj(ctx, moduleVersion)
+		if err == nil || !gomoduleservice.ErrorIsCode(err, gomoduleservice.NotFound) {
+			return
+		}
 	}
 	tempGoEnv, err := s.newTempGoEnv()
 	if err != nil {
@@ -334,7 +345,7 @@ func (s *Service) GoMod(ctx context.Context, moduleVersion *module.Version) (dat
 		return
 	}
 	defer runCmdResource.release()
-	fSeeStorage, _, downloadInfo, err := s.getGoModuleAndIndexIfNeeded(ctx, tempGoEnv, moduleVersion, runCmdResource)
+	fSeeStorage, info, downloadInfo, err := s.getGoModuleAndIndexIfNeeded(ctx, tempGoEnv, moduleVersion, runCmdResource)
 	if err != nil {
 		return
 	}
@@ -342,11 +353,14 @@ func (s *Service) GoMod(ctx context.Context, moduleVersion *module.Version) (dat
 		data, err = tempGoEnv.open(downloadInfo.GoMod)
 		return
 	}
-	data, err = s.goModFromConcatObj(ctx, moduleVersion)
+	data, err = s.goModFromConcatObj(ctx, &module.Version{
+		Path:    moduleVersion.Path,
+		Version: info.Version,
+	})
 	if err == nil || !gomoduleservice.ErrorIsCode(err, gomoduleservice.NotFound) {
 		return
 	}
-	data, err = s.storage.GetObject(ctx, storageGoModObjNamePrefix+moduleVersion.Path+"@"+moduleVersion.Version)
+	data, err = s.storage.GetObject(ctx, storageGoModObjNamePrefix+moduleVersion.Path+"@"+info.Version)
 	err = mapStorageError(err)
 	return
 }
@@ -394,17 +408,19 @@ func (s *Service) Info(ctx context.Context, moduleVersion *module.Version) (info
 	if err != nil {
 		return
 	}
-	if moduleVersion.Version == "latest" {
-		err = gomoduleservice.NewErrorf(gomoduleservice.NotFound, `module version "latest" is invalid`)
+	fSeeStorage, err := s.versionPreamble(moduleVersion.Version, true)
+	if err != nil {
 		return
 	}
-	info, err = s.infoFromGoModObj(ctx, moduleVersion)
-	if err == nil || !gomoduleservice.ErrorIsCode(err, gomoduleservice.NotFound) {
-		return
-	}
-	info, err = s.infoFromConcatObj(ctx, moduleVersion)
-	if err == nil || !gomoduleservice.ErrorIsCode(err, gomoduleservice.NotFound) {
-		return
+	if fSeeStorage {
+		info, err = s.infoFromGoModObj(ctx, moduleVersion)
+		if err == nil || !gomoduleservice.ErrorIsCode(err, gomoduleservice.NotFound) {
+			return
+		}
+		info, err = s.infoFromConcatObj(ctx, moduleVersion)
+		if err == nil || !gomoduleservice.ErrorIsCode(err, gomoduleservice.NotFound) {
+			return
+		}
 	}
 	tempGoEnv, err := s.newTempGoEnv()
 	if err != nil {
@@ -433,11 +449,15 @@ func (s *Service) Info(ctx context.Context, moduleVersion *module.Version) (info
 		info = info2
 		return
 	}
-	info, err = s.infoFromConcatObj(ctx, moduleVersion)
+	moduleVersionCanonical := &module.Version{
+		Path:    moduleVersion.Path,
+		Version: info2.Version,
+	}
+	info, err = s.infoFromConcatObj(ctx, moduleVersionCanonical)
 	if err == nil || !gomoduleservice.ErrorIsCode(err, gomoduleservice.NotFound) {
 		return
 	}
-	info, err = s.infoFromGoModObj(ctx, moduleVersion)
+	info, err = s.infoFromGoModObj(ctx, moduleVersionCanonical)
 	return
 }
 
@@ -688,23 +708,44 @@ func (s *Service) notFoundOptimizations(modulePath string) (err error) {
 	return
 }
 
+func (s *Service) versionPreamble(version string, allowNonCanonicalVersion bool) (fSeeStorage bool, err error) {
+	if version == "" {
+		err = gomoduleservice.NewErrorf(gomoduleservice.NotFound, `module version "" is invalid`)
+		return
+	}
+	if version == "latest" {
+		err = gomoduleservice.NewErrorf(gomoduleservice.NotFound, `module version "latest" is invalid`)
+		return
+	}
+	if version != module.CanonicalVersion(version) {
+		if !allowNonCanonicalVersion {
+			err = gomoduleservice.NewErrorf(gomoduleservice.NotFound, `module version %#v is invalid`, version)
+		}
+		return
+	}
+	fSeeStorage = true
+	return
+}
+
 func (s *Service) Zip(ctx context.Context, moduleVersion *module.Version) (data io.ReadCloser, err error) {
 	err = s.notFoundOptimizations(moduleVersion.Path)
 	if err != nil {
 		return
 	}
-	if moduleVersion.Version == "latest" {
-		err = gomoduleservice.NewErrorf(gomoduleservice.NotFound, `module version "latest" is invalid`)
+	fSeeStorage, err := s.versionPreamble(moduleVersion.Version, false)
+	if err != nil {
 		return
 	}
-	data, err = s.storage.GetObject(ctx, storageZipObjNamePrefix+moduleVersion.Path+"@"+moduleVersion.Version)
-	if err == nil || !storage.ErrorIsCode(err, storage.NotFound) {
-		err = mapStorageError(err)
-		return
-	}
-	data, err = s.zipFromConcatObj(ctx, moduleVersion)
-	if err == nil || !gomoduleservice.ErrorIsCode(err, gomoduleservice.NotFound) {
-		return
+	if fSeeStorage {
+		data, err = s.storage.GetObject(ctx, storageZipObjNamePrefix+moduleVersion.Path+"@"+moduleVersion.Version)
+		if err == nil || !storage.ErrorIsCode(err, storage.NotFound) {
+			err = mapStorageError(err)
+			return
+		}
+		data, err = s.zipFromConcatObj(ctx, moduleVersion)
+		if err == nil || !gomoduleservice.ErrorIsCode(err, gomoduleservice.NotFound) {
+			return
+		}
 	}
 	tempGoEnv, err := s.newTempGoEnv()
 	if err != nil {
@@ -725,7 +766,7 @@ func (s *Service) Zip(ctx context.Context, moduleVersion *module.Version) (data 
 		return
 	}
 	defer runCmdResource.release()
-	fSeeStorage, _, downloadInfo, err := s.getGoModuleAndIndexIfNeeded(ctx, tempGoEnv, moduleVersion, runCmdResource)
+	fSeeStorage, info, downloadInfo, err := s.getGoModuleAndIndexIfNeeded(ctx, tempGoEnv, moduleVersion, runCmdResource)
 	if err != nil {
 		return
 	}
@@ -733,11 +774,14 @@ func (s *Service) Zip(ctx context.Context, moduleVersion *module.Version) (data 
 		data, err = tempGoEnv.open(downloadInfo.Zip)
 		return
 	}
-	data, err = s.zipFromConcatObj(ctx, moduleVersion)
+	data, err = s.zipFromConcatObj(ctx, &module.Version{
+		Path:    moduleVersion.Path,
+		Version: info.Version,
+	})
 	if err == nil || !gomoduleservice.ErrorIsCode(err, gomoduleservice.NotFound) {
 		return
 	}
-	data, err = s.storage.GetObject(ctx, storageZipObjNamePrefix+moduleVersion.Path+"@"+moduleVersion.Version)
+	data, err = s.storage.GetObject(ctx, storageZipObjNamePrefix+moduleVersion.Path+"@"+info.Version)
 	err = mapStorageError(err)
 	return
 }
