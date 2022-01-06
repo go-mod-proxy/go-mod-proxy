@@ -4,7 +4,7 @@ go 1.17
 
 require (
 	cloud.google.com/go/storage v1.18.2
-	github.com/alecthomas/kong v0.2.18
+	github.com/alecthomas/kong v0.3.0
 	github.com/alessio/shellescape v1.4.1
 	github.com/bradleyfalzon/ghinstallation/v2 v2.0.3
 	github.com/googleapis/gax-go/v2 v2.1.1
