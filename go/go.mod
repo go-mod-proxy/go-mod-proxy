@@ -6,7 +6,7 @@ require (
 	cloud.google.com/go/storage v1.18.2
 	github.com/alecthomas/kong v0.2.18
 	github.com/alessio/shellescape v1.4.1
-	github.com/bradleyfalzon/ghinstallation/v2 v2.0.3
+	github.com/bradleyfalzon/ghinstallation/v2 v2.0.4
 	github.com/googleapis/gax-go/v2 v2.1.1
 	github.com/gorilla/mux v1.8.0
 	github.com/hashicorp/go-cleanhttp v0.5.2
@@ -20,6 +20,8 @@ require (
 	gopkg.in/square/go-jose.v2 v2.6.0
 	gopkg.in/yaml.v2 v2.4.0
 )
+
+require github.com/google/go-github/v41 v41.0.0 // indirect
 
 require (
 	cloud.google.com/go v0.97.0 // indirect
