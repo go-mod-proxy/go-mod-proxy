@@ -311,20 +311,18 @@ func (s *Service) GoMod(ctx context.Context, moduleVersion *module.Version) (dat
 	if err != nil {
 		return
 	}
-	fSeeStorage, err := s.versionPreamble(moduleVersion.Version, false)
+	_, err = s.versionPreamble(moduleVersion.Version, false)
 	if err != nil {
 		return
 	}
-	if fSeeStorage {
-		data, err = s.storage.GetObject(ctx, storageGoModObjNamePrefix+moduleVersion.Path+"@"+moduleVersion.Version)
-		if err == nil || !storage.ErrorIsCode(err, storage.NotFound) {
-			err = mapStorageError(err)
-			return
-		}
-		data, err = s.goModFromConcatObj(ctx, moduleVersion)
-		if err == nil || !gomoduleservice.ErrorIsCode(err, gomoduleservice.NotFound) {
-			return
-		}
+	data, err = s.storage.GetObject(ctx, storageGoModObjNamePrefix+moduleVersion.Path+"@"+moduleVersion.Version)
+	if err == nil || !storage.ErrorIsCode(err, storage.NotFound) {
+		err = mapStorageError(err)
+		return
+	}
+	data, err = s.goModFromConcatObj(ctx, moduleVersion)
+	if err == nil || !gomoduleservice.ErrorIsCode(err, gomoduleservice.NotFound) {
+		return
 	}
 	tempGoEnv, err := s.newTempGoEnv()
 	if err != nil {
@@ -732,20 +730,18 @@ func (s *Service) Zip(ctx context.Context, moduleVersion *module.Version) (data 
 	if err != nil {
 		return
 	}
-	fSeeStorage, err := s.versionPreamble(moduleVersion.Version, false)
+	_, err = s.versionPreamble(moduleVersion.Version, false)
 	if err != nil {
 		return
 	}
-	if fSeeStorage {
-		data, err = s.storage.GetObject(ctx, storageZipObjNamePrefix+moduleVersion.Path+"@"+moduleVersion.Version)
-		if err == nil || !storage.ErrorIsCode(err, storage.NotFound) {
-			err = mapStorageError(err)
-			return
-		}
-		data, err = s.zipFromConcatObj(ctx, moduleVersion)
-		if err == nil || !gomoduleservice.ErrorIsCode(err, gomoduleservice.NotFound) {
-			return
-		}
+	data, err = s.storage.GetObject(ctx, storageZipObjNamePrefix+moduleVersion.Path+"@"+moduleVersion.Version)
+	if err == nil || !storage.ErrorIsCode(err, storage.NotFound) {
+		err = mapStorageError(err)
+		return
+	}
+	data, err = s.zipFromConcatObj(ctx, moduleVersion)
+	if err == nil || !gomoduleservice.ErrorIsCode(err, gomoduleservice.NotFound) {
+		return
 	}
 	tempGoEnv, err := s.newTempGoEnv()
 	if err != nil {
