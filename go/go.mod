@@ -3,7 +3,7 @@ module github.com/go-mod-proxy/go-mod-proxy/go
 go 1.17
 
 require (
-	cloud.google.com/go/storage v1.18.2
+	cloud.google.com/go/storage v1.21.0
 	github.com/alecthomas/kong v0.5.0
 	github.com/alessio/shellescape v1.4.1
 	github.com/bradleyfalzon/ghinstallation/v2 v2.0.4
