@@ -12,7 +12,7 @@ require (
 	github.com/hashicorp/go-cleanhttp v0.5.2
 	github.com/jbrekelmans/go-lib v0.0.0-20211029231445-0171e093f34c
 	github.com/sirupsen/logrus v1.8.1
-	github.com/stretchr/testify v1.7.0
+	github.com/stretchr/testify v1.7.1
 	golang.org/x/mod v0.4.3-0.20210323215154-1cc8812c1740
 	golang.org/x/net v0.0.0-20220225172249-27dd8689420f
 	golang.org/x/oauth2 v0.0.0-20220223155221-ee480838109b
