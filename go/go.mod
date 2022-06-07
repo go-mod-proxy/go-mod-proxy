@@ -12,7 +12,7 @@ require (
 	github.com/hashicorp/go-cleanhttp v0.5.2
 	github.com/jbrekelmans/go-lib v0.0.0-20211029231445-0171e093f34c
 	github.com/sirupsen/logrus v1.8.1
-	github.com/stretchr/testify v1.7.0
+	github.com/stretchr/testify v1.7.2
 	golang.org/x/mod v0.4.3-0.20210323215154-1cc8812c1740
 	golang.org/x/net v0.0.0-20220225172249-27dd8689420f
 	golang.org/x/oauth2 v0.0.0-20220223155221-ee480838109b
@@ -47,5 +47,5 @@ require (
 	google.golang.org/genproto v0.0.0-20220304144024-325a89244dc8 // indirect
 	google.golang.org/grpc v1.44.0 // indirect
 	google.golang.org/protobuf v1.27.1 // indirect
-	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
+	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
