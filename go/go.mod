@@ -4,7 +4,7 @@ go 1.17
 
 require (
 	cloud.google.com/go/storage v1.18.2
-	github.com/alecthomas/kong v0.5.0
+	github.com/alecthomas/kong v0.7.0
 	github.com/alessio/shellescape v1.4.1
 	github.com/bradleyfalzon/ghinstallation/v2 v2.0.4
 	github.com/googleapis/gax-go/v2 v2.1.1
@@ -36,7 +36,6 @@ require (
 	github.com/google/go-cmp v0.5.7 // indirect
 	github.com/google/go-github/v39 v39.2.0
 	github.com/google/go-querystring v1.1.0 // indirect
-	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	go.opencensus.io v0.23.0 // indirect
 	golang.org/x/crypto v0.0.0-20210817164053-32db794688a5 // indirect
