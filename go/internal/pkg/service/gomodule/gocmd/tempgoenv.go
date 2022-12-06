@@ -3,7 +3,6 @@ package gocmd
 import (
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -56,7 +55,7 @@ type tempGoEnv struct {
 
 func newTempGoEnv(scratchDir string, baseEnviron *util.Environ) (t2 *tempGoEnv, err error) {
 	t := &tempGoEnv{}
-	t.TmpDir, err = ioutil.TempDir(scratchDir, "")
+	t.TmpDir, err = os.TempDir(scratchDir, "")
 	if err != nil {
 		return
 	}

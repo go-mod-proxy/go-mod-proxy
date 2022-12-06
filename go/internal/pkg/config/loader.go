@@ -7,7 +7,6 @@ import (
 	"encoding/pem"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -430,7 +429,7 @@ func (l *Loader) validateSecret(vctx *validateValueContext, secret *Secret) {
 		x++
 		file := l.resolveFile(*secret.File)
 		var err error
-		secret.Plaintext, err = ioutil.ReadFile(file)
+		secret.Plaintext, err = os.ReadFile(file)
 		if err != nil {
 			vctx.AddErrorf(`secret is sourced from a file because .file is set to %#v but got unexpected error loading file %#v: %v`,
 				*secret.File, file, err)

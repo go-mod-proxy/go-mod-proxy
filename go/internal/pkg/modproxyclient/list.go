@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 )
 
@@ -14,7 +14,7 @@ func List(ctx context.Context, baseURL string, client *http.Client, modulePath s
 		return nil, err
 	}
 	defer resp.Body.Close()
-	bytesRemaining, err := ioutil.ReadAll(resp.Body)
+	bytesRemaining, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, fmt.Errorf("error reading body of %d-response to %s %s: %v", resp.StatusCode,
 			resp.Request.Method, resp.Request.URL.String(), err)
