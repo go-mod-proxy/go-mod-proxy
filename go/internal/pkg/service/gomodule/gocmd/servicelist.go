@@ -10,7 +10,7 @@ import (
 	"sync"
 
 	log "github.com/sirupsen/logrus"
-	module "golang.org/x/mod/module"
+	"golang.org/x/mod/module"
 
 	"github.com/go-mod-proxy/go-mod-proxy/go/internal/pkg/modproxyclient"
 	gomoduleservice "github.com/go-mod-proxy/go-mod-proxy/go/internal/pkg/service/gomodule"
@@ -138,8 +138,8 @@ func (s *Service) listAddObjectNames(ctx context.Context, errChan chan<- error, 
 			return
 		}
 		versionMapMutex.Lock()
-		for _, name := range objList.Names {
-			version := name[len(namePrefix):]
+		for _, obj := range objList.Objects {
+			version := obj.Name[len(namePrefix):]
 			if !module.IsPseudoVersion(version) {
 				versionMap[version] = struct{}{}
 			}
@@ -254,9 +254,9 @@ func (s *Service) listViaParentProxy(ctx context.Context, modulePath string) (go
 func moveSliceElementsThatAreInMapToBack(s []string, m map[string]struct{}) []string {
 	i := 0
 	end := len(s)
-	for ; i < end; {
+	for i < end {
 		if _, ok := m[s[i]]; ok {
-			swap(s, i, end - 1)
+			swap(s, i, end-1)
 			end--
 		} else {
 			i++

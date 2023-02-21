@@ -18,7 +18,7 @@ import (
 	"time"
 
 	gcs "cloud.google.com/go/storage"
-	gax "github.com/googleapis/gax-go/v2"
+	"github.com/googleapis/gax-go/v2"
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/api/googleapi"
 
@@ -255,7 +255,7 @@ func (s *Storage) ListObjects(ctx context.Context, opts storage.ObjectListOption
 	if opts.NamePrefix != "" {
 		urlQuery.Set("prefix", opts.NamePrefix)
 	}
-	urlQuery.Set("fields", "items(name,timeDeleted),nextPageToken")
+	urlQuery.Set("fields", "items(name,timeDeleted,timeCreated),nextPageToken")
 	urlQuery.Set("prettyPrint", "false")
 	url := s.objectListURL
 	if len(urlQuery) > 0 {
@@ -294,8 +294,9 @@ func (s *Storage) ListObjects(ctx context.Context, opts storage.ObjectListOption
 		if resp.StatusCode == http.StatusOK {
 			respBody := &struct {
 				Items []struct {
-					Name        string `json:"name"`
-					TimeDeleted string `json:"timeDeleted"`
+					Name        string    `json:"name"`
+					TimeDeleted string    `json:"timeDeleted"`
+					TimeCreated time.Time `json:"timeCreated"`
 				} `json:"items"`
 				NextPageToken string `json:"nextPageToken"`
 			}{}
@@ -307,7 +308,10 @@ func (s *Storage) ListObjects(ctx context.Context, opts storage.ObjectListOption
 			}
 			for _, item := range respBody.Items {
 				if item.TimeDeleted == "" {
-					objList.Names = append(objList.Names, item.Name)
+					objList.Objects = append(objList.Objects, storage.ModuleObject{
+						Name:        item.Name,
+						CreatedTime: item.TimeCreated,
+					})
 				}
 			}
 			return objList, nil

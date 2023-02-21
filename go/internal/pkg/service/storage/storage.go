@@ -3,6 +3,7 @@ package storage
 import (
 	"context"
 	"io"
+	"time"
 )
 
 type Storage interface {
@@ -32,8 +33,13 @@ type Storage interface {
 }
 
 type ObjectList struct {
-	Names         []string
+	Objects       []ModuleObject
 	NextPageToken string
+}
+
+type ModuleObject struct {
+	Name        string
+	CreatedTime time.Time
 }
 
 type ObjectListOptions struct {
