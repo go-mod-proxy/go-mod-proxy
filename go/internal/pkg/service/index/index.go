@@ -22,6 +22,10 @@ type ModuleIndex struct {
 
 const defaultLimit = 2000
 
+func NewService(storage storage.Storage) *Service {
+	return &Service{storage: storage}
+}
+
 func (s *Service) GetIndex(ctx context.Context, since time.Time, limit int) ([]ModuleIndex, error) {
 	if limit == 0 {
 		limit = defaultLimit

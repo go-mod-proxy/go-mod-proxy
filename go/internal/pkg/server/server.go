@@ -12,12 +12,14 @@ import (
 
 	"github.com/go-mod-proxy/go-mod-proxy/go/internal/pkg/config"
 	servercommon "github.com/go-mod-proxy/go-mod-proxy/go/internal/pkg/server/common"
+	servergoindex "github.com/go-mod-proxy/go-mod-proxy/go/internal/pkg/server/goindex"
 	servergomodule "github.com/go-mod-proxy/go-mod-proxy/go/internal/pkg/server/gomodule"
 	servergosumdbproxy "github.com/go-mod-proxy/go-mod-proxy/go/internal/pkg/server/gosumdbproxy"
 	serviceauth "github.com/go-mod-proxy/go-mod-proxy/go/internal/pkg/service/auth"
 	serviceauthaccesstoken "github.com/go-mod-proxy/go-mod-proxy/go/internal/pkg/service/auth/accesstoken"
 	serviceauthgce "github.com/go-mod-proxy/go-mod-proxy/go/internal/pkg/service/auth/gce"
 	servicegomodule "github.com/go-mod-proxy/go-mod-proxy/go/internal/pkg/service/gomodule"
+	servicegoindex "github.com/go-mod-proxy/go-mod-proxy/go/internal/pkg/service/index"
 )
 
 type ServerOptions struct {
@@ -26,6 +28,7 @@ type ServerOptions struct {
 	GCEAuthenticator         *serviceauthgce.Authenticator
 	ClientAuthEnabled        bool
 	GoModuleService          servicegomodule.Service
+	GoIndexService           *servicegoindex.Service
 	IdentityStore            serviceauth.IdentityStore
 	Realm                    string
 	SumDatabaseProxy         *config.SumDatabaseProxy
@@ -122,6 +125,10 @@ func NewServer(opts ServerOptions) (*Server, error) {
 	if err != nil {
 		return nil, err
 	}
+	_ = servergoindex.NewServer(servergoindex.ServerOptions{
+		IndexService: opts.GoIndexService,
+		Router:       s.router,
+	})
 	return s, nil
 }
 

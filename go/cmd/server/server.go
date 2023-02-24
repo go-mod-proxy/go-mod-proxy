@@ -29,6 +29,7 @@ import (
 	serviceauthaccesstoken "github.com/go-mod-proxy/go-mod-proxy/go/internal/pkg/service/auth/accesstoken"
 	serviceauthgce "github.com/go-mod-proxy/go-mod-proxy/go/internal/pkg/service/auth/gce"
 	servicegomodulegocmd "github.com/go-mod-proxy/go-mod-proxy/go/internal/pkg/service/gomodule/gocmd"
+	servicegoindex "github.com/go-mod-proxy/go-mod-proxy/go/internal/pkg/service/index"
 	servicestorage "github.com/go-mod-proxy/go-mod-proxy/go/internal/pkg/service/storage"
 	servicestoragegcs "github.com/go-mod-proxy/go-mod-proxy/go/internal/pkg/service/storage/gcs"
 )
@@ -37,6 +38,7 @@ import (
 const maxHeaderBytes = 5 * (1 << 10) // 5 Kibibytes (KiB)
 
 // CLI is a type reflected by "github.com/alecthomas/kong" that configures the CLI command for the client forward proxy.
+//
 //nolint:structtag // linter does not like the syntax required by the kong package
 type CLI struct {
 	ConfigFile                        string `required type:"existingfile" help:"Name of the YAML config file"`
@@ -246,12 +248,14 @@ func Run(ctx context.Context, opts *CLI) error {
 	if err != nil {
 		return err
 	}
+	goIndexService := servicegoindex.NewService(storage)
 	server, err := server.NewServer(server.ServerOptions{
 		AccessControlList:        cfg.ClientAuth.AccessControlList,
 		AccessTokenAuthenticator: accessTokenAuth,
 		ClientAuthEnabled:        cfg.ClientAuth.Enabled,
 		GCEAuthenticator:         gceAuth,
 		GoModuleService:          goModuleService,
+		GoIndexService:           goIndexService,
 		IdentityStore:            identityStore,
 		Realm:                    realm,
 		SumDatabaseProxy:         cfg.SumDatabaseProxy,
