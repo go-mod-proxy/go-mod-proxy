@@ -10,6 +10,8 @@ import (
 	"github.com/go-mod-proxy/go-mod-proxy/go/internal/pkg/service/storage"
 )
 
+const storageGoModObjNamePrefix = "gomod/"
+
 type Service struct {
 	storage storage.Storage
 }
@@ -27,10 +29,7 @@ func NewService(storage storage.Storage) *Service {
 }
 
 func (s *Service) GetIndex(ctx context.Context, since time.Time, limit int) ([]ModuleIndex, error) {
-	if limit == 0 {
-		limit = defaultLimit
-	}
-	if limit > defaultLimit {
+	if limit == 0 || limit > defaultLimit {
 		limit = defaultLimit
 	}
 	index := make([]ModuleIndex, 0, limit)
@@ -38,7 +37,8 @@ func (s *Service) GetIndex(ctx context.Context, since time.Time, limit int) ([]M
 	for {
 		var objList *storage.ObjectList
 		objList, err := s.storage.ListObjects(ctx, storage.ObjectListOptions{
-			PageToken: pageToken,
+			NamePrefix: storageGoModObjNamePrefix,
+			PageToken:  pageToken,
 		})
 		if err != nil {
 			return nil, err
