@@ -3,8 +3,9 @@
 [![License](https://img.shields.io/badge/License-Apache%202.0-yellowgreen.svg)](https://opensource.org/licenses/Apache-2.0)
 
 # Introduction
-A Go module proxy that:
+A Go module proxy and index that:
 1. Can front private repositories and supports authentication to GitHub repositories via GitHub App credentials.
+1. Serves a feed of new module versions cached by the proxy, sorted in chronological order.
 1. Implements strong consistency so that `.info`, `.zip` and `.mod` always reflect the same copy of a module version across all server replicas. This is an important reliability property.
 1. Uses Google Cloud Storage (see [durability and availability](https://cloud.google.com/storage/docs/storage-classes)) to realize scalable, reliable and low maintenance storage.
 1. Supports client authentication and access control (but see [#2](https://github.com/go-mod-proxy/go-mod-proxy/issues/2)).
@@ -34,3 +35,6 @@ Supports authentication using Google Compute Engine Instance Identity Tokens. Th
 Supports authentication via username/password.
 Supports access control lists to configure fine grained access control on modules.
 See the example configuration [config_example_clientauth.yaml](config_example_clientauth.yaml).
+
+# Index
+Supports a new-line delimited JSON feed providing modules sorted in chronological order (by the time they were cached by the proxy). The index is served on the `/index` endpoint. It supports the optional parameters `since`, the oldest allowable timestamp for module versions, and `limit`, the maximum length of the returned list.
