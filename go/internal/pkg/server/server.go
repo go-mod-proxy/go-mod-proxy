@@ -18,8 +18,8 @@ import (
 	serviceauth "github.com/go-mod-proxy/go-mod-proxy/go/internal/pkg/service/auth"
 	serviceauthaccesstoken "github.com/go-mod-proxy/go-mod-proxy/go/internal/pkg/service/auth/accesstoken"
 	serviceauthgce "github.com/go-mod-proxy/go-mod-proxy/go/internal/pkg/service/auth/gce"
+	servicegoindex "github.com/go-mod-proxy/go-mod-proxy/go/internal/pkg/service/goindex"
 	servicegomodule "github.com/go-mod-proxy/go-mod-proxy/go/internal/pkg/service/gomodule"
-	servicegoindex "github.com/go-mod-proxy/go-mod-proxy/go/internal/pkg/service/index"
 )
 
 type ServerOptions struct {

@@ -33,11 +33,11 @@ type Storage interface {
 }
 
 type ObjectList struct {
-	Objects       []ModuleObject
+	Objects       []Object
 	NextPageToken string
 }
 
-type ModuleObject struct {
+type Object struct {
 	Name        string
 	CreatedTime time.Time
 }
@@ -50,7 +50,7 @@ type ObjectListOptions struct {
 	// If MaxResults is 0 then the maximum number of object names to return is implemention-defined but non-zero.
 	MaxResults int
 
-	// PageToken ccan be set to o.NextPageToken where o is an *ObjectList returned from a call to ListObjects.
+	// PageToken can be set to o.NextPageToken where o is an *ObjectList returned from a call to ListObjects.
 	PageToken string
 }
 

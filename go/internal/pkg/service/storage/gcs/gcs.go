@@ -308,7 +308,7 @@ func (s *Storage) ListObjects(ctx context.Context, opts storage.ObjectListOption
 			}
 			for _, item := range respBody.Items {
 				if item.TimeDeleted == "" {
-					objList.Objects = append(objList.Objects, storage.ModuleObject{
+					objList.Objects = append(objList.Objects, storage.Object{
 						Name:        item.Name,
 						CreatedTime: item.TimeCreated,
 					})

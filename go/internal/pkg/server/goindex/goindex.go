@@ -9,7 +9,7 @@ import (
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
 
-	servicegoindex "github.com/go-mod-proxy/go-mod-proxy/go/internal/pkg/service/index"
+	servicegoindex "github.com/go-mod-proxy/go-mod-proxy/go/internal/pkg/service/goindex"
 )
 
 type ServerOptions struct {
@@ -35,17 +35,17 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	var since time.Time
 	var limit int
 	query := req.URL.Query()
-	if sinceParam, err := time.Parse(time.RFC3339, query.Get("since")); err != nil {
+	if sinceParam, err := time.Parse(time.RFC3339, query.Get("since")); err == nil {
 		since = sinceParam
 	}
-	if limitParam, err := strconv.Atoi(query.Get("limit")); err != nil {
+	if limitParam, err := strconv.Atoi(query.Get("limit")); err == nil {
 		limit = limitParam
 	}
 
 	modules, err := s.service.GetIndex(req.Context(), since, limit)
 	if err != nil {
 		status := http.StatusInternalServerError
-		log.Errorf("responding to index request with %d due to error: %v", status, err)
+		log.Errorf("failed to query storage due to error: %v", err)
 		w.WriteHeader(status)
 		return
 	}

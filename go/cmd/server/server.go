@@ -28,8 +28,8 @@ import (
 	"github.com/go-mod-proxy/go-mod-proxy/go/internal/pkg/service/auth"
 	serviceauthaccesstoken "github.com/go-mod-proxy/go-mod-proxy/go/internal/pkg/service/auth/accesstoken"
 	serviceauthgce "github.com/go-mod-proxy/go-mod-proxy/go/internal/pkg/service/auth/gce"
+	servicegoindex "github.com/go-mod-proxy/go-mod-proxy/go/internal/pkg/service/goindex"
 	servicegomodulegocmd "github.com/go-mod-proxy/go-mod-proxy/go/internal/pkg/service/gomodule/gocmd"
-	servicegoindex "github.com/go-mod-proxy/go-mod-proxy/go/internal/pkg/service/index"
 	servicestorage "github.com/go-mod-proxy/go-mod-proxy/go/internal/pkg/service/storage"
 	servicestoragegcs "github.com/go-mod-proxy/go-mod-proxy/go/internal/pkg/service/storage/gcs"
 )

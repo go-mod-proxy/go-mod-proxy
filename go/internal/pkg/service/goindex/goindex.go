@@ -1,10 +1,11 @@
-package index
+package goindex
 
 import (
 	"context"
 	"strings"
 	"time"
 
+	log "github.com/sirupsen/logrus"
 	"golang.org/x/exp/slices"
 
 	"github.com/go-mod-proxy/go-mod-proxy/go/internal/pkg/service/storage"
@@ -16,7 +17,7 @@ type Service struct {
 	storage storage.Storage
 }
 
-type ModuleIndex struct {
+type IndexItem struct {
 	Module    string
 	Version   string
 	Timestamp time.Time
@@ -28,11 +29,12 @@ func NewService(storage storage.Storage) *Service {
 	return &Service{storage: storage}
 }
 
-func (s *Service) GetIndex(ctx context.Context, since time.Time, limit int) ([]ModuleIndex, error) {
+func (s *Service) GetIndex(ctx context.Context, since time.Time, limit int) ([]IndexItem, error) {
 	if limit == 0 || limit > defaultLimit {
 		limit = defaultLimit
 	}
-	index := make([]ModuleIndex, 0, limit)
+	log.Infof("Retrieving index items: since=%+v, limit=%d", since, limit)
+	index := make([]IndexItem, 0, limit)
 	var pageToken string
 	for {
 		var objList *storage.ObjectList
@@ -52,7 +54,7 @@ func (s *Service) GetIndex(ctx context.Context, since time.Time, limit int) ([]M
 			if !ok {
 				continue
 			}
-			index = append(index, ModuleIndex{
+			index = append(index, IndexItem{
 				Module:    module,
 				Version:   version,
 				Timestamp: o.CreatedTime,
@@ -65,7 +67,7 @@ func (s *Service) GetIndex(ctx context.Context, since time.Time, limit int) ([]M
 	}
 
 	// Chronological order means first to last
-	slices.SortFunc(index, func(i, j ModuleIndex) bool {
+	slices.SortFunc(index, func(i, j IndexItem) bool {
 		return i.Timestamp.Before(j.Timestamp)
 	})
 	if len(index) < limit {
