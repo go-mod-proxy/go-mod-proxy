@@ -47,6 +47,7 @@ func (s *Service) GetIndex(ctx context.Context, since time.Time, limit int) ([]M
 			if o.CreatedTime.Before(since) {
 				continue
 			}
+			o.Name = strings.TrimPrefix(o.Name, storageGoModObjNamePrefix)
 			module, version, ok := strings.Cut(o.Name, "@")
 			if !ok {
 				continue
@@ -63,8 +64,9 @@ func (s *Service) GetIndex(ctx context.Context, since time.Time, limit int) ([]M
 		}
 	}
 
+	// Chronological order means first to last
 	slices.SortFunc(index, func(i, j ModuleIndex) bool {
-		return i.Timestamp.After(j.Timestamp)
+		return i.Timestamp.Before(j.Timestamp)
 	})
 	if len(index) < limit {
 		return index, nil

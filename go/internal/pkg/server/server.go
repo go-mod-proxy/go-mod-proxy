@@ -115,6 +115,10 @@ func NewServer(opts ServerOptions) (*Server, error) {
 	if err != nil {
 		return nil, err
 	}
+	_ = servergoindex.NewServer(servergoindex.ServerOptions{
+		IndexService: opts.GoIndexService,
+		Router:       s.router,
+	})
 	_, err = servergomodule.NewServer(servergomodule.ServerOptions{
 		AccessControlList:    opts.AccessControlList,
 		ClientAuthEnabled:    opts.ClientAuthEnabled,
@@ -125,10 +129,6 @@ func NewServer(opts ServerOptions) (*Server, error) {
 	if err != nil {
 		return nil, err
 	}
-	_ = servergoindex.NewServer(servergoindex.ServerOptions{
-		IndexService: opts.GoIndexService,
-		Router:       s.router,
-	})
 	return s, nil
 }
 

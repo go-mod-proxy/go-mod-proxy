@@ -15,7 +15,7 @@ import (
 
 	"github.com/alessio/shellescape"
 	log "github.com/sirupsen/logrus"
-	module "golang.org/x/mod/module"
+	"golang.org/x/mod/module"
 
 	"github.com/go-mod-proxy/go-mod-proxy/go/internal/pkg/config"
 	"github.com/go-mod-proxy/go-mod-proxy/go/internal/pkg/git"
@@ -176,8 +176,7 @@ func NewService(opts ServiceOptions) (s *Service, err error) {
 	defer cancelFunc()
 	_, strLog, err := ss.runCmd(ctx, t, args)
 	if err != nil {
-		i := strings.Index(strLog, "stderr: go mod download: no modules specified")
-		if i < 0 || (i > 0 && strLog[i-1] != '\n') {
+		if !strings.Contains(strLog, "no modules specified") {
 			return
 		}
 		err = nil

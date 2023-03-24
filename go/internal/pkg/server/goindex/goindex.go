@@ -34,29 +34,26 @@ func NewServer(opts ServerOptions) *Server {
 func (s *Server) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	var since time.Time
 	var limit int
-	if sinceQuery, err := time.Parse(time.RFC3339, req.URL.Query().Get("since")); err != nil {
-		since = sinceQuery
+	query := req.URL.Query()
+	if sinceParam, err := time.Parse(time.RFC3339, query.Get("since")); err != nil {
+		since = sinceParam
 	}
-	if limitQuery, err := strconv.Atoi(req.URL.Query().Get("limit")); err != nil {
-		limit = limitQuery
+	if limitParam, err := strconv.Atoi(query.Get("limit")); err != nil {
+		limit = limitParam
 	}
 
 	modules, err := s.service.GetIndex(req.Context(), since, limit)
 	if err != nil {
 		status := http.StatusInternalServerError
-		log.Tracef("responding to index request with %s due to error: %v", status, err)
+		log.Errorf("responding to index request with %d due to error: %v", status, err)
 		w.WriteHeader(status)
 		return
 	}
 
+	enc := json.NewEncoder(w)
 	for _, module := range modules {
-		jsonl, err := json.Marshal(module)
-		if err != nil {
-			status := http.StatusInternalServerError
-			log.Tracef("failed to marshal module %+v due to error: %v", module, err)
-			w.WriteHeader(status)
-			return
+		if err = enc.Encode(module); err != nil {
+			log.Errorf("failed to encode module %+v due to error: %v", module, err)
 		}
-		w.Write(jsonl)
 	}
 }

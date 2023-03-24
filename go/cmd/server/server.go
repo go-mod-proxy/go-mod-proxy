@@ -230,6 +230,7 @@ func Run(ctx context.Context, opts *CLI) error {
 	if scratchDir == "" {
 		scratchDir = os.TempDir()
 	}
+	goIndexService := servicegoindex.NewService(storage)
 	goModuleService, err := servicegomodulegocmd.NewService(servicegomodulegocmd.ServiceOptions{
 		GitCredentialHelperShell: fmt.Sprintf("exec %s --log-level=%s credential-helper --type=git --port=%d",
 			shellescape.Quote(executable2),
@@ -248,7 +249,6 @@ func Run(ctx context.Context, opts *CLI) error {
 	if err != nil {
 		return err
 	}
-	goIndexService := servicegoindex.NewService(storage)
 	server, err := server.NewServer(server.ServerOptions{
 		AccessControlList:        cfg.ClientAuth.AccessControlList,
 		AccessTokenAuthenticator: accessTokenAuth,
