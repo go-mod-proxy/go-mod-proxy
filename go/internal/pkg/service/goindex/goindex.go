@@ -11,14 +11,12 @@ import (
 	"github.com/go-mod-proxy/go-mod-proxy/go/internal/pkg/service/storage"
 )
 
-const storageGoModObjNamePrefix = "gomod/"
-
 type Service struct {
 	storage storage.Storage
 }
 
 type IndexItem struct {
-	Module    string
+	Path      string
 	Version   string
 	Timestamp time.Time
 }
@@ -50,12 +48,12 @@ func (s *Service) GetIndex(ctx context.Context, since time.Time, limit int) ([]I
 				continue
 			}
 			o.Name = strings.TrimPrefix(o.Name, storageGoModObjNamePrefix)
-			module, version, ok := strings.Cut(o.Name, "@")
+			path, version, ok := strings.Cut(o.Name, "@")
 			if !ok {
 				continue
 			}
 			index = append(index, IndexItem{
-				Module:    module,
+				Path:      path,
 				Version:   version,
 				Timestamp: o.CreatedTime,
 			})
