@@ -26,10 +26,10 @@ import (
 )
 
 const (
-	storageConcatObjNamePrefix           = "concat/"
-	storageGoModObjNamePrefix            = "gomod/"
-	storageZipObjNamePrefix              = "zip/"
-	storageGoModObjCommitTimeMetadataKey = "gomod-commit-time"
+	StorageConcatObjNamePrefix           = "concat/"
+	StorageGoModObjNamePrefix            = "gomod/"
+	StorageZipObjNamePrefix              = "zip/"
+	StorageGoModObjCommitTimeMetadataKey = "gomod-commit-time"
 )
 
 type goModuleInfo struct {
@@ -274,7 +274,7 @@ func (s *Service) getGoModuleAndIndexIfNeeded(ctx context.Context, tempGoEnv *te
 	if err != nil {
 		return
 	}
-	name := storageConcatObjNamePrefix + moduleVersion.Path + "@" + info.Version
+	name := StorageConcatObjNamePrefix + moduleVersion.Path + "@" + info.Version
 	err = s.storage.CreateObjectExclusively(ctx, name, nil, readerForConcatObj)
 	if err != nil {
 		if !storage.ErrorIsCode(err, storage.PreconditionFailed) {
@@ -314,7 +314,7 @@ func (s *Service) GoMod(ctx context.Context, moduleVersion *module.Version) (dat
 	if err != nil {
 		return
 	}
-	data, err = s.storage.GetObject(ctx, storageGoModObjNamePrefix+moduleVersion.Path+"@"+moduleVersion.Version)
+	data, err = s.storage.GetObject(ctx, StorageGoModObjNamePrefix+moduleVersion.Path+"@"+moduleVersion.Version)
 	if err == nil || !storage.ErrorIsCode(err, storage.NotFound) {
 		err = mapStorageError(err)
 		return
@@ -357,13 +357,13 @@ func (s *Service) GoMod(ctx context.Context, moduleVersion *module.Version) (dat
 	if err == nil || !gomoduleservice.ErrorIsCode(err, gomoduleservice.NotFound) {
 		return
 	}
-	data, err = s.storage.GetObject(ctx, storageGoModObjNamePrefix+moduleVersion.Path+"@"+info.Version)
+	data, err = s.storage.GetObject(ctx, StorageGoModObjNamePrefix+moduleVersion.Path+"@"+info.Version)
 	err = mapStorageError(err)
 	return
 }
 
 func (s *Service) goModFromConcatObj(ctx context.Context, moduleVersion *module.Version) (d io.ReadCloser, err error) {
-	data, err := s.storage.GetObject(ctx, storageConcatObjNamePrefix+moduleVersion.Path+"@"+moduleVersion.Version)
+	data, err := s.storage.GetObject(ctx, StorageConcatObjNamePrefix+moduleVersion.Path+"@"+moduleVersion.Version)
 	if err != nil {
 		err = mapStorageError(err)
 		return
@@ -459,7 +459,7 @@ func (s *Service) Info(ctx context.Context, moduleVersion *module.Version) (info
 }
 
 func (s *Service) infoFromConcatObj(ctx context.Context, moduleVersion *module.Version) (i *gomoduleservice.Info, err error) {
-	data, err := s.storage.GetObject(ctx, storageConcatObjNamePrefix+moduleVersion.Path+"@"+moduleVersion.Version)
+	data, err := s.storage.GetObject(ctx, StorageConcatObjNamePrefix+moduleVersion.Path+"@"+moduleVersion.Version)
 	if err == nil {
 		defer func() {
 			err2 := data.Close()
@@ -488,9 +488,9 @@ func (s *Service) infoFromConcatObj(ctx context.Context, moduleVersion *module.V
 }
 
 func (s *Service) infoFromGoModObj(ctx context.Context, moduleVersion *module.Version) (*gomoduleservice.Info, error) {
-	metadata, err := s.storage.GetObjectMetadata(ctx, storageGoModObjNamePrefix+moduleVersion.Path+"@"+moduleVersion.Version)
+	metadata, err := s.storage.GetObjectMetadata(ctx, StorageGoModObjNamePrefix+moduleVersion.Path+"@"+moduleVersion.Version)
 	if err == nil {
-		commitTimeStr := metadata[storageGoModObjCommitTimeMetadataKey]
+		commitTimeStr := metadata[StorageGoModObjCommitTimeMetadataKey]
 		commitTime, err := time.Parse(time.RFC3339, commitTimeStr)
 		if err != nil {
 			return nil, fmt.Errorf("error parsing goMod obj's commit time metadata (%#v): %w", commitTimeStr, err)
@@ -526,10 +526,10 @@ func (s *Service) indexGoModule(tempGoEnv *tempGoEnv, commitTime time.Time, goMo
 		log.Errorf("indexGoModule failed: %v", err)
 		return
 	}
-	name := storageGoModObjNamePrefix + moduleVersion.Path + "@" + moduleVersion.Version
+	name := StorageGoModObjNamePrefix + moduleVersion.Path + "@" + moduleVersion.Version
 	err = s.storage.CreateObjectExclusively(ctx, name,
 		storage.ObjectMetadata{
-			storageGoModObjCommitTimeMetadataKey: commitTime.UTC().Format(time.RFC3339),
+			StorageGoModObjCommitTimeMetadataKey: commitTime.UTC().Format(time.RFC3339),
 		}, goModFD.FD)
 	if err != nil {
 		if !storage.ErrorIsCode(err, storage.PreconditionFailed) {
@@ -544,7 +544,7 @@ func (s *Service) indexGoModule(tempGoEnv *tempGoEnv, commitTime time.Time, goMo
 		log.Errorf("indexGoModule failed: %v", err)
 		return
 	}
-	name = storageZipObjNamePrefix + moduleVersion.Path + "@" + moduleVersion.Version
+	name = StorageZipObjNamePrefix + moduleVersion.Path + "@" + moduleVersion.Version
 	err = s.storage.CreateObjectExclusively(ctx, name, nil, zipFD.FD)
 	if err != nil {
 		if !storage.ErrorIsCode(err, storage.PreconditionFailed) {
@@ -554,7 +554,7 @@ func (s *Service) indexGoModule(tempGoEnv *tempGoEnv, commitTime time.Time, goMo
 	} else {
 		log.Infof("stored object %#v", name)
 	}
-	name = storageConcatObjNamePrefix + moduleVersion.Path + "@" + moduleVersion.Version
+	name = StorageConcatObjNamePrefix + moduleVersion.Path + "@" + moduleVersion.Version
 	err = s.storage.DeleteObject(ctx, name)
 	if err != nil {
 		if !storage.ErrorIsCode(err, storage.NotFound) {
@@ -733,7 +733,7 @@ func (s *Service) Zip(ctx context.Context, moduleVersion *module.Version) (data 
 	if err != nil {
 		return
 	}
-	data, err = s.storage.GetObject(ctx, storageZipObjNamePrefix+moduleVersion.Path+"@"+moduleVersion.Version)
+	data, err = s.storage.GetObject(ctx, StorageZipObjNamePrefix+moduleVersion.Path+"@"+moduleVersion.Version)
 	if err == nil || !storage.ErrorIsCode(err, storage.NotFound) {
 		err = mapStorageError(err)
 		return
@@ -776,14 +776,14 @@ func (s *Service) Zip(ctx context.Context, moduleVersion *module.Version) (data 
 	if err == nil || !gomoduleservice.ErrorIsCode(err, gomoduleservice.NotFound) {
 		return
 	}
-	data, err = s.storage.GetObject(ctx, storageZipObjNamePrefix+moduleVersion.Path+"@"+info.Version)
+	data, err = s.storage.GetObject(ctx, StorageZipObjNamePrefix+moduleVersion.Path+"@"+info.Version)
 	err = mapStorageError(err)
 	return
 }
 
 func (s *Service) zipFromConcatObj(ctx context.Context, moduleVersion *module.Version) (d io.ReadCloser, err error) {
 	didPanic := true
-	data, err := s.storage.GetObject(ctx, storageConcatObjNamePrefix+moduleVersion.Path+"@"+moduleVersion.Version)
+	data, err := s.storage.GetObject(ctx, StorageConcatObjNamePrefix+moduleVersion.Path+"@"+moduleVersion.Version)
 	if err != nil {
 		err = mapStorageError(err)
 		return

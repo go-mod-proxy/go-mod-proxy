@@ -43,8 +43,8 @@ func (s *Service) List(ctx context.Context, modulePath string) (io.ReadCloser, e
 	errChan := make(chan error, errChanSize)
 	ctx, cancelFunc := context.WithCancel(ctx)
 	defer cancelFunc()
-	go s.listAddObjectNames(ctx, errChan, storageGoModObjNamePrefix+modulePath+"@", versionMap, versionMapMutex)
-	go s.listAddObjectNames(ctx, errChan, storageConcatObjNamePrefix+modulePath+"@", versionMap, versionMapMutex)
+	go s.listAddObjectNames(ctx, errChan, StorageGoModObjNamePrefix+modulePath+"@", versionMap, versionMapMutex)
+	go s.listAddObjectNames(ctx, errChan, StorageConcatObjNamePrefix+modulePath+"@", versionMap, versionMapMutex)
 	var goListVersions []string
 	go func() {
 		var err error

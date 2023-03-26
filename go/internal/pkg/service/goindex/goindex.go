@@ -8,6 +8,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/exp/slices"
 
+	mod "github.com/go-mod-proxy/go-mod-proxy/go/internal/pkg/service/gomodule/gocmd"
 	"github.com/go-mod-proxy/go-mod-proxy/go/internal/pkg/service/storage"
 )
 
@@ -37,7 +38,7 @@ func (s *Service) GetIndex(ctx context.Context, since time.Time, limit int) ([]I
 	for {
 		var objList *storage.ObjectList
 		objList, err := s.storage.ListObjects(ctx, storage.ObjectListOptions{
-			NamePrefix: storageGoModObjNamePrefix,
+			NamePrefix: mod.StorageGoModObjNamePrefix,
 			PageToken:  pageToken,
 		})
 		if err != nil {
@@ -47,7 +48,7 @@ func (s *Service) GetIndex(ctx context.Context, since time.Time, limit int) ([]I
 			if o.CreatedTime.Before(since) {
 				continue
 			}
-			o.Name = strings.TrimPrefix(o.Name, storageGoModObjNamePrefix)
+			o.Name = strings.TrimPrefix(o.Name, mod.StorageGoModObjNamePrefix)
 			path, version, ok := strings.Cut(o.Name, "@")
 			if !ok {
 				continue
