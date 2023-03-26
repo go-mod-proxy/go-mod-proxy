@@ -53,7 +53,8 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	enc := json.NewEncoder(w)
 	for _, module := range modules {
 		if err = enc.Encode(module); err != nil {
-			log.Errorf("failed to encode module %+v due to error: %v", module, err)
+			log.Trace("error encoding module, assuming client closed connection")
+			return
 		}
 	}
 }
