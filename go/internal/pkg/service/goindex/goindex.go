@@ -36,9 +36,8 @@ func (s *Service) GetIndex(ctx context.Context, since time.Time, limit int) ([]I
 	index := make([]IndexItem, 0, limit)
 	var pageToken string
 	for {
-		var objList *storage.ObjectList
 		objList, err := s.storage.ListObjects(ctx, storage.ObjectListOptions{
-			NamePrefix: mod.StorageGoModObjNamePrefix,
+			NamePrefix: mod.StorageGoModObjNamePrefix + "github.com/BurntSushi/",
 			PageToken:  pageToken,
 		})
 		if err != nil {

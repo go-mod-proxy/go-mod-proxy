@@ -128,7 +128,6 @@ func (s *Service) listAddObjectNames(ctx context.Context, errChan chan<- error, 
 	versionMap map[string]struct{}, versionMapMutex *sync.Mutex) {
 	var pageToken string
 	for {
-		var objList *storage.ObjectList
 		objList, err := s.storage.ListObjects(ctx, storage.ObjectListOptions{
 			NamePrefix: namePrefix,
 			PageToken:  pageToken,
