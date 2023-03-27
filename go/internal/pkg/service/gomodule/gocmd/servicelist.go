@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"strings"
 	"sync"
 
@@ -33,7 +32,7 @@ func (s *Service) List(ctx context.Context, modulePath string) (io.ReadCloser, e
 			sb.WriteString(version)
 			sb.WriteByte('\n')
 		}
-		return ioutil.NopCloser(strings.NewReader(sb.String())), nil
+		return io.NopCloser(strings.NewReader(sb.String())), nil
 	}
 	versionMap := map[string]struct{}{}
 	versionMapMutex := new(sync.Mutex)
@@ -121,7 +120,7 @@ func (s *Service) List(ctx context.Context, modulePath string) (io.ReadCloser, e
 		sb.WriteString(version)
 		sb.WriteByte('\n')
 	}
-	return ioutil.NopCloser(strings.NewReader(sb.String())), nil
+	return io.NopCloser(strings.NewReader(sb.String())), nil
 }
 
 func (s *Service) listAddObjectNames(ctx context.Context, errChan chan<- error, namePrefix string,

@@ -9,7 +9,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"math/rand"
 	"net/http"
 	"net/url"
@@ -177,13 +176,13 @@ func (s *Storage) CreateObjectExclusively(ctx context.Context,
 		}
 		respBody = resp.Body
 		if resp.StatusCode == http.StatusOK {
-			_, err := io.Copy(ioutil.Discard, respBody)
+			_, err := io.Copy(io.Discard, respBody)
 			if err != nil {
 				log.Errorf("error reading body of %d-response to %s %s: %v", resp.StatusCode, method, url, err)
 			}
 			break
 		}
-		respBodyBytes, err := ioutil.ReadAll(respBody)
+		respBodyBytes, err := io.ReadAll(respBody)
 		if err != nil {
 			log.Errorf("error reading body of %d-response to %s %s: %v", resp.StatusCode, method, url, err)
 		}
@@ -316,7 +315,7 @@ func (s *Storage) ListObjects(ctx context.Context, opts storage.ObjectListOption
 			}
 			return objList, nil
 		}
-		respBodyBytes, err2 := ioutil.ReadAll(respBodyReader)
+		respBodyBytes, err2 := io.ReadAll(respBodyReader)
 		if err2 != nil {
 			log.Errorf("error reading body of %d-response to %s %s: %v", resp.StatusCode, method, url, err2)
 		}

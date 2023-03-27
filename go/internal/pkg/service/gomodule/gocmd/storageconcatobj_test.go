@@ -3,7 +3,6 @@ package gocmd
 import (
 	"bytes"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -45,7 +44,7 @@ func setup(t *testing.T) *testResources {
 		t: t,
 	}
 	var err error
-	tt.TmpDir, err = ioutil.TempDir("", "")
+	tt.TmpDir, err = os.MkdirTemp("", "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -55,7 +54,7 @@ func setup(t *testing.T) *testResources {
 		}
 	}()
 	tt.File1 = filepath.Join(tt.TmpDir, "file1")
-	err = ioutil.WriteFile(tt.File1, []byte{1, 2, 3}, 0600)
+	err = os.WriteFile(tt.File1, []byte{1, 2, 3}, 0600)
 	if err != nil {
 		t.Log(err)
 		t.Fail()
@@ -68,7 +67,7 @@ func setup(t *testing.T) *testResources {
 		return nil
 	}
 	tt.File2 = filepath.Join(tt.TmpDir, "file2")
-	err = ioutil.WriteFile(tt.File2, []byte{4, 5, 6}, 0600)
+	err = os.WriteFile(tt.File2, []byte{4, 5, 6}, 0600)
 	if err != nil {
 		t.Log(err)
 		t.Fail()

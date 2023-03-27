@@ -39,7 +39,7 @@ const maxHeaderBytes = 5 * (1 << 10) // 5 Kibibytes (KiB)
 
 // CLI is a type reflected by "github.com/alecthomas/kong" that configures the CLI command for the client forward proxy.
 //
-//nolint:structtag // linter does not like the syntax required by the kong package
+//nolint:govet // linter does not like the syntax required by the kong package
 type CLI struct {
 	ConfigFile                        string `required type:"existingfile" help:"Name of the YAML config file"`
 	ReadAfterListIsStronglyConsistent bool   `help:"Enable strong consistency for read-after-list, and enable strong consistency for read-after-latest for public modules. This decreases performance for list and latest endpoints, but reduces the likelihood of clients seeing errors"`

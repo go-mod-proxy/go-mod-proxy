@@ -5,9 +5,9 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
@@ -210,7 +210,7 @@ func (s *Service) getGoModuleAndIndexIfNeeded(ctx context.Context, tempGoEnv *te
 		err = fmt.Errorf("command %s succeeded but got unexpected error loading module:\n%s", formatArgs(args), strLog)
 		return
 	}
-	infoJSONBytes, err := ioutil.ReadFile(downloadInfo.Info)
+	infoJSONBytes, err := os.ReadFile(downloadInfo.Info)
 	if err != nil {
 		err = fmt.Errorf(`unexpected error reading .info file created by %s command: %w`, formatArgs(args), err)
 		return
@@ -395,7 +395,7 @@ func (s *Service) goModFromConcatObj(ctx context.Context, moduleVersion *module.
 		return
 	}
 	closeDataAlways = true
-	d = ioutil.NopCloser(bytes.NewReader(goModPrefix))
+	d = io.NopCloser(bytes.NewReader(goModPrefix))
 	didPanic = false
 	return
 }
@@ -803,7 +803,7 @@ func (s *Service) zipFromConcatObj(ctx context.Context, moduleVersion *module.Ve
 		return
 	}
 	if goModToRead > 0 {
-		_, err = io.CopyN(ioutil.Discard, data, int64(goModToRead))
+		_, err = io.CopyN(io.Discard, data, int64(goModToRead))
 		if err != nil {
 			didPanic = false
 			return

@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"io/ioutil"
+	"os"
 	"strings"
 )
 
@@ -37,7 +37,7 @@ func WriteConfigFile(file string, cfg Config) (err error) {
 	if err != nil {
 		return
 	}
-	err = ioutil.WriteFile(file, buf.Bytes(), 0600)
+	err = os.WriteFile(file, buf.Bytes(), 0600)
 	return
 }
 

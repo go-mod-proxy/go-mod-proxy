@@ -5,7 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 
 	"github.com/hashicorp/go-cleanhttp"
@@ -34,7 +34,7 @@ func doRequest(ctx context.Context, port int, reqBody, respBody interface{}) err
 		return err
 	}
 	defer resp.Body.Close()
-	respBodyBytes, err2 := ioutil.ReadAll(resp.Body)
+	respBodyBytes, err2 := io.ReadAll(resp.Body)
 	if resp.StatusCode != 200 {
 		return fmt.Errorf("response of request %s %s has unexpected status %d, body: %s", method, url, resp.StatusCode, string(respBodyBytes))
 	}
