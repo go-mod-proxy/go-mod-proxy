@@ -55,7 +55,7 @@ type tempGoEnv struct {
 
 func newTempGoEnv(scratchDir string, baseEnviron *util.Environ) (t2 *tempGoEnv, err error) {
 	t := &tempGoEnv{}
-	t.TmpDir, err = os.TempDir(scratchDir, "")
+	t.TmpDir, err = os.MkdirTemp(scratchDir, "")
 	if err != nil {
 		return
 	}

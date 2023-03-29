@@ -44,7 +44,7 @@ func setup(t *testing.T) *testResources {
 		t: t,
 	}
 	var err error
-	tt.TmpDir, err = os.TempDir("", "")
+	tt.TmpDir, err = os.MkdirTemp("", "")
 	if err != nil {
 		t.Fatal(err)
 	}
