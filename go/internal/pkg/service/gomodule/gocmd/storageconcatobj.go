@@ -73,7 +73,6 @@ func (c *readerForCreateConcatObj) Read(p []byte) (n int, err error) {
 		if err != io.EOF {
 			return
 		}
-		err = nil
 		c.readPos++
 	}
 	n2, err := c.zipFD.Read(p[n:])
