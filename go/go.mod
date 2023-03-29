@@ -1,6 +1,6 @@
 module github.com/go-mod-proxy/go-mod-proxy/go
 
-go 1.17
+go 1.18
 
 require (
 	cloud.google.com/go/storage v1.18.2
@@ -22,19 +22,16 @@ require (
 )
 
 require (
+	cloud.google.com/go v0.100.2 // indirect
 	cloud.google.com/go/compute v1.5.0 // indirect
 	cloud.google.com/go/iam v0.3.0 // indirect
-	github.com/google/go-github/v45 v45.2.0 // indirect
-)
-
-require (
-	cloud.google.com/go v0.100.2 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/golang-jwt/jwt/v4 v4.4.1 // indirect
 	github.com/golang/groupcache v0.0.0-20200121045136-8c9f03a8e57e // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/google/go-cmp v0.5.8 // indirect
 	github.com/google/go-github/v39 v39.2.0
+	github.com/google/go-github/v45 v45.2.0 // indirect
 	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect

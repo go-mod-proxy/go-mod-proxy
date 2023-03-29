@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"strings"
 	"sync"
 
@@ -33,7 +32,7 @@ func (s *Service) List(ctx context.Context, modulePath string) (io.ReadCloser, e
 			sb.WriteString(version)
 			sb.WriteByte('\n')
 		}
-		return ioutil.NopCloser(strings.NewReader(sb.String())), nil
+		return io.NopCloser(strings.NewReader(sb.String())), nil
 	}
 	versionMap := map[string]struct{}{}
 	versionMapMutex := new(sync.Mutex)
@@ -121,7 +120,7 @@ func (s *Service) List(ctx context.Context, modulePath string) (io.ReadCloser, e
 		sb.WriteString(version)
 		sb.WriteByte('\n')
 	}
-	return ioutil.NopCloser(strings.NewReader(sb.String())), nil
+	return io.NopCloser(strings.NewReader(sb.String())), nil
 }
 
 func (s *Service) listAddObjectNames(ctx context.Context, errChan chan<- error, namePrefix string,
@@ -254,9 +253,9 @@ func (s *Service) listViaParentProxy(ctx context.Context, modulePath string) (go
 func moveSliceElementsThatAreInMapToBack(s []string, m map[string]struct{}) []string {
 	i := 0
 	end := len(s)
-	for ; i < end; {
+	for i < end {
 		if _, ok := m[s[i]]; ok {
-			swap(s, i, end - 1)
+			swap(s, i, end-1)
 			end--
 		} else {
 			i++

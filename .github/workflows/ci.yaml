@@ -10,7 +10,7 @@ jobs:
     steps:
       - uses: actions/setup-go@v2
         with:
-          go-version: '1.17'
+          go-version: '1.18'
 
       - uses: actions/checkout@v2
 
@@ -22,22 +22,20 @@ jobs:
         env:
           CGO_ENABLED: '0'
           GOARCH: amd64
-          GOOS: linux 
-        run: go build -ldflags='-w -s' -o ../gomoduleproxy ./cmd  
+          GOOS: linux
+        run: go build -ldflags='-w -s' -o ../gomoduleproxy ./cmd
         working-directory: go
 
       - name: "🏗️ Docker Build"
         run: docker build --tag=jbrekelmans/go-module-proxy:latest .
 
-      - name: "🧐 Lint"
-        uses: golangci/golangci-lint-action@v2
+      - name: "🧐 golangci-lint"
+        uses: golangci/golangci-lint-action@v3
         with:
           # Possible flags to set in args are documented here: https://golangci-lint.run/usage/configuration/
           args: --timeout 10m
-          skip-build-cache: true
-          skip-go-installation: true
-          skip-pkg-cache: true
-          version: v1.29
+          skip-cache: true
+          version: latest
           working-directory: go
 
       - name: "🔐 Docker Login"
