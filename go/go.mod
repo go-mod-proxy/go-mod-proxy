@@ -13,8 +13,8 @@ require (
 	github.com/jbrekelmans/go-lib v0.0.0-20211029231445-0171e093f34c
 	github.com/sirupsen/logrus v1.9.0
 	github.com/stretchr/testify v1.7.0
-	golang.org/x/mod v0.4.3-0.20210323215154-1cc8812c1740
-	golang.org/x/net v0.0.0-20220225172249-27dd8689420f
+	golang.org/x/mod v0.8.0
+	golang.org/x/net v0.9.0
 	golang.org/x/oauth2 v0.0.0-20220223155221-ee480838109b
 	google.golang.org/api v0.71.0
 	gopkg.in/square/go-jose.v2 v2.6.0
@@ -37,8 +37,8 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	go.opencensus.io v0.23.0 // indirect
 	golang.org/x/crypto v0.0.0-20210817164053-32db794688a5 // indirect
-	golang.org/x/sys v0.0.0-20220715151400-c0bba94af5f8 // indirect
-	golang.org/x/text v0.3.7 // indirect
+	golang.org/x/sys v0.7.0 // indirect
+	golang.org/x/text v0.9.0 // indirect
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/genproto v0.0.0-20220304144024-325a89244dc8 // indirect
