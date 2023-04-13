@@ -14,7 +14,7 @@ require (
 	github.com/jbrekelmans/go-lib v0.0.0-20211029231445-0171e093f34c
 	github.com/sirupsen/logrus v1.9.0
 	github.com/stretchr/testify v1.8.2
-	golang.org/x/mod v0.8.0
+	golang.org/x/mod v0.10.0
 	golang.org/x/net v0.9.0
 	golang.org/x/oauth2 v0.7.0
 	google.golang.org/api v0.71.0
