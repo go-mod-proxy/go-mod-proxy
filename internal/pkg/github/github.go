@@ -10,7 +10,7 @@ import (
 	"time"
 
 	ghinstallation "github.com/bradleyfalzon/ghinstallation/v2"
-	"github.com/google/go-github/v39/github"
+	"github.com/google/go-github/v52/github"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/go-mod-proxy/go-mod-proxy/go/internal/pkg/config"
@@ -168,10 +168,10 @@ func (g *GitHubClientManager) getInstanceGitHubApp(instance *gitHubInstance, app
 }
 
 // GetGitHubAppClient returns a NotDefinedError if:
-// 1. no GitHub instance with host host is defined
-// 2. no GitHub App with id appID is defined in GitHub instance with host host
-// 3. the GitHub App with id appID in GitHub instance with host host is not installed in account repoOwner (and no error occurred
-//      attempting to query GitHub App installations)
+//  1. no GitHub instance with host host is defined
+//  2. no GitHub App with id appID is defined in GitHub instance with host host
+//  3. the GitHub App with id appID in GitHub instance with host host is not installed in account repoOwner (and no error occurred
+//     attempting to query GitHub App installations)
 func (g *GitHubClientManager) GetGitHubAppClient(ctx context.Context, host string, appID int64, repoOwner string) (*github.Client,
 	TokenGetter, error) {
 	instance, err := g.getInstance(host)

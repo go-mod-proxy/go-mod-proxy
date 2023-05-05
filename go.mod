@@ -7,7 +7,7 @@ require (
 	github.com/alecthomas/kong v0.7.1
 	github.com/alessio/shellescape v1.4.1
 	github.com/bradleyfalzon/ghinstallation/v2 v2.4.0
-	github.com/google/go-github/v39 v39.2.0
+	github.com/google/go-github/v52 v52.0.0
 	github.com/googleapis/gax-go/v2 v2.1.1
 	github.com/gorilla/mux v1.8.0
 	github.com/hashicorp/go-cleanhttp v0.5.2
@@ -33,7 +33,6 @@ require (
 	github.com/golang/groupcache v0.0.0-20200121045136-8c9f03a8e57e // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/google/go-cmp v0.5.9 // indirect
-	github.com/google/go-github/v52 v52.0.0 // indirect
 	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	go.opencensus.io v0.23.0 // indirect
