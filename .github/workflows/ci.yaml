@@ -13,19 +13,16 @@ jobs:
       - uses: actions/setup-go@v4
         with:
           check-latest: true
-          go-version-file: go/go.mod
 
       - name: "✅ Unit Test"
         run: go test ./...
-        working-directory: go
 
       - name: "🛠️ Go Build"
         env:
           CGO_ENABLED: '0'
           GOARCH: amd64
           GOOS: linux
-        run: go build -ldflags='-w -s' -o ../gomoduleproxy ./cmd
-        working-directory: go
+        run: go build -ldflags='-w -s' -o gomoduleproxy ./cmd
 
       - name: "🧐 golangci-lint"
         uses: golangci/golangci-lint-action@v3
@@ -33,7 +30,6 @@ jobs:
           # Possible flags to set in args are documented here: https://golangci-lint.run/usage/configuration/
           args: --timeout 10m
           version: latest
-          working-directory: go
 
       - name: "🏗️ Docker Build"
         run: docker build --tag=jbrekelmans/go-module-proxy:latest .
@@ -53,5 +49,4 @@ jobs:
 
       - name: "📦 Docker Push (latest)"
         if: ${{ github.ref == 'ref/head/master' }}
-        run: |
-          docker push jbrekelmans/go-module-proxy:latest
+        run: docker push jbrekelmans/go-module-proxy:latest
