@@ -13,13 +13,11 @@ import (
 )
 
 // CLI is a type reflected by "github.com/alecthomas/kong" that configures the CLI command for the client forward proxy.
-//
-//nolint:govet // linter does not like the syntax required by the kong package
 type CLI struct {
-	Password  string `required help:"Password component of credentials to access server"`
-	Port      int    `required help:"Port to listen on"`
-	ServerURL string `required help:"URL of the server"`
-	User      string `required help:"Username component of credentials to access server"`
+	Password  string `required:"" help:"Password component of credentials to access server"`
+	Port      int    `required:"" help:"Port to listen on"`
+	ServerURL string `required:"" help:"URL of the server"`
+	User      string `required:"" help:"Username component of credentials to access server"`
 }
 
 type app struct {

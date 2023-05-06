@@ -25,14 +25,12 @@ func main() {
 }
 
 // CLI is a definition for kong command line parser
-//
-//nolint:govet // linter does not like the syntax required by the kong package
 var CLI struct {
 	LogLevel string `help:"Log level. Must be case-insensitive equal to one of trace, debug, info, warning, error, panic and fatal"`
 
-	ClientForwardProxy clientforwardproxy.CLI `cmd`
-	CredentialHelper   credentialhelper.CLI   `cmd help:"Credential helper utility used by server"`
-	Server             server.CLI             `cmd`
+	ClientForwardProxy clientforwardproxy.CLI `cmd:""`
+	CredentialHelper   credentialhelper.CLI   `cmd:"" help:"Credential helper utility used by server"`
+	Server             server.CLI             `cmd:""`
 }
 
 func mainCore() error {
