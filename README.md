@@ -1,4 +1,6 @@
 ![CI](https://github.com/go-mod-proxy/go-mod-proxy/workflows/ci/badge.svg)
+[![Go Report Card](https://goreportcard.com/badge/github.com/go-mod-proxy/go-mod-proxy)](https://goreportcard.com/report/github.com/go-mod-proxy/go-mod-proxy)
+[![Go Reference](https://pkg.go.dev/badge/github.com/go-mod-proxy/go-mod-proxy.svg)](https://pkg.go.dev/github.com/go-mod-proxy/go-mod-proxy)
 ![Docker Hub](https://img.shields.io/docker/image-size/jbrekelmans/go-module-proxy?sort=date)
 [![License](https://img.shields.io/badge/License-Apache%202.0-yellowgreen.svg)](https://opensource.org/licenses/Apache-2.0)
 
@@ -14,7 +16,7 @@ A Go module proxy that:
 |---|---|---|---|---|---|---|---|
 | This module proxy server | - Encapsulates git over HTTPS via internal credential helper server<br/>- Least-privilege authentication to GitHub via [GitHub Apps](https://developer.github.com/apps/)<br/>- Supports only private GitHub repositories (and no other Version Control Systems) | Highly available, durable and scalable storage via Google Cloud Storage (GCS) | Yes | - Identity-based access via [Instance Identity JWTs](https://cloud.google.com/compute/docs/instances/verifying-instance-identity)<br/>- Username/password authentication<br/>- Access control lists | [11 stars](https://github.com/go-mod-proxy/go-mod-proxy) | [No, see #1](https://github.com/go-mod-proxy/go-mod-proxy/issues/1) | [No, see #228](https://github.com/go-mod-proxy/go-mod-proxy/issues/228) |
 | [Athens](https://docs.gomods.io/) | Athens [documents](https://docs.gomods.io/configuration/authentication/) how to setup authentication for all (if not most) Version Control Systems, but does not encapsulate it | Supports GCS and much more | No | No | [4.1k stars](https://github.com/gomods/athens) | No | No |
-| [goproxy.io](https://github.com/goproxyio/goproxy) | ? | File system | No | No | [5.5k stars](https://github.com/goproxyio/goproxy) | - | No |
+| [goproxy.io](https://github.com/goproxyio/goproxy) | Not documented | File system | No | No | [5.5k stars](https://github.com/goproxyio/goproxy) | - | No |
 
 # Strong consistency
 The `.info`, `.zip` and `.mod` endpoints are strongly consistent. More formally:
