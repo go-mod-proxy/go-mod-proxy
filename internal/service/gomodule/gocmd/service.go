@@ -18,6 +18,7 @@ import (
 	module "golang.org/x/mod/module"
 
 	"github.com/go-mod-proxy/go-mod-proxy/internal/config"
+	internalErrors "github.com/go-mod-proxy/go-mod-proxy/internal/errors"
 	"github.com/go-mod-proxy/go-mod-proxy/internal/git"
 	"github.com/go-mod-proxy/go-mod-proxy/internal/modproxyclient"
 	gomoduleservice "github.com/go-mod-proxy/go-mod-proxy/internal/service/gomodule"
@@ -277,7 +278,7 @@ func (s *Service) getGoModuleAndIndexIfNeeded(ctx context.Context, tempGoEnv *te
 	name := storageConcatObjNamePrefix + moduleVersion.Path + "@" + info.Version
 	err = s.storage.CreateObjectExclusively(ctx, name, nil, readerForConcatObj)
 	if err != nil {
-		if !storage.ErrorIsCode(err, storage.PreconditionFailed) {
+		if !internalErrors.ErrorIsCode(err, internalErrors.PreconditionFailed) {
 			err = mapStorageError(err)
 			return
 		}
@@ -315,7 +316,7 @@ func (s *Service) GoMod(ctx context.Context, moduleVersion *module.Version) (dat
 		return
 	}
 	data, err = s.storage.GetObject(ctx, storageGoModObjNamePrefix+moduleVersion.Path+"@"+moduleVersion.Version)
-	if err == nil || !storage.ErrorIsCode(err, storage.NotFound) {
+	if err == nil || !internalErrors.ErrorIsCode(err, internalErrors.NotFound) {
 		err = mapStorageError(err)
 		return
 	}
@@ -532,7 +533,7 @@ func (s *Service) indexGoModule(tempGoEnv *tempGoEnv, commitTime time.Time, goMo
 			storageGoModObjCommitTimeMetadataKey: commitTime.UTC().Format(time.RFC3339),
 		}, goModFD.FD)
 	if err != nil {
-		if !storage.ErrorIsCode(err, storage.PreconditionFailed) {
+		if !internalErrors.ErrorIsCode(err, internalErrors.PreconditionFailed) {
 			log.Errorf("indexGoModule failed: %v", err)
 			return
 		}
@@ -547,7 +548,7 @@ func (s *Service) indexGoModule(tempGoEnv *tempGoEnv, commitTime time.Time, goMo
 	name = storageZipObjNamePrefix + moduleVersion.Path + "@" + moduleVersion.Version
 	err = s.storage.CreateObjectExclusively(ctx, name, nil, zipFD.FD)
 	if err != nil {
-		if !storage.ErrorIsCode(err, storage.PreconditionFailed) {
+		if !internalErrors.ErrorIsCode(err, internalErrors.PreconditionFailed) {
 			log.Errorf("indexGoModule failed: %v", err)
 			return
 		}
@@ -557,7 +558,7 @@ func (s *Service) indexGoModule(tempGoEnv *tempGoEnv, commitTime time.Time, goMo
 	name = storageConcatObjNamePrefix + moduleVersion.Path + "@" + moduleVersion.Version
 	err = s.storage.DeleteObject(ctx, name)
 	if err != nil {
-		if !storage.ErrorIsCode(err, storage.NotFound) {
+		if !internalErrors.ErrorIsCode(err, internalErrors.NotFound) {
 			log.Errorf("indexGoModule failed: %v", err)
 			return
 		}
@@ -734,7 +735,7 @@ func (s *Service) Zip(ctx context.Context, moduleVersion *module.Version) (data 
 		return
 	}
 	data, err = s.storage.GetObject(ctx, storageZipObjNamePrefix+moduleVersion.Path+"@"+moduleVersion.Version)
-	if err == nil || !storage.ErrorIsCode(err, storage.NotFound) {
+	if err == nil || !internalErrors.ErrorIsCode(err, internalErrors.NotFound) {
 		err = mapStorageError(err)
 		return
 	}

@@ -21,6 +21,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/api/googleapi"
 
+	internalErrors "github.com/go-mod-proxy/go-mod-proxy/internal/errors"
 	"github.com/go-mod-proxy/go-mod-proxy/internal/service/storage"
 	"github.com/go-mod-proxy/go-mod-proxy/internal/util"
 )
@@ -192,7 +193,13 @@ func (s *Storage) CreateObjectExclusively(ctx context.Context,
 			continue
 		}
 		if resp.StatusCode == http.StatusPreconditionFailed {
-			return storage.NewErrorf(storage.PreconditionFailed, "got %d-response to %s %s: %s", resp.StatusCode, resp.Request.Method, resp.Request.URL.String(), string(respBodyBytes))
+			return internalErrors.NewErrorf(
+				internalErrors.PreconditionFailed,
+				"got %d-response to %s %s: %s",
+				resp.StatusCode,
+				resp.Request.Method,
+				resp.Request.URL.String(),
+				string(respBodyBytes))
 		}
 		return fmt.Errorf("got unexpected %d-response to %s %s: %s", resp.StatusCode, resp.Request.Method, resp.Request.URL.String(), string(respBodyBytes))
 	}
@@ -346,12 +353,12 @@ func (s *Storage) ListObjects(ctx context.Context, opts storage.ObjectListOption
 
 func mapGCSPackageError(err error) error {
 	if err == gcs.ErrObjectNotExist {
-		return storage.NewError(storage.NotFound, err.Error())
+		return internalErrors.NewError(internalErrors.NotFound, err.Error())
 	}
 	var googleAPIErr *googleapi.Error
 	if errors.As(err, &googleAPIErr) {
 		if googleAPIErr.Code == http.StatusNotFound {
-			return storage.NewError(storage.NotFound, err.Error())
+			return internalErrors.NewError(internalErrors.NotFound, err.Error())
 		}
 	}
 	return err

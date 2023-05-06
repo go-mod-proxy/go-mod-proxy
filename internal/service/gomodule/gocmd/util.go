@@ -8,8 +8,8 @@ import (
 
 	"github.com/alessio/shellescape"
 
+	internalErrors "github.com/go-mod-proxy/go-mod-proxy/internal/errors"
 	gomoduleservice "github.com/go-mod-proxy/go-mod-proxy/internal/service/gomodule"
-	"github.com/go-mod-proxy/go-mod-proxy/internal/service/storage"
 )
 
 func fdSeekToStart(fd *os.File) error {
@@ -35,8 +35,8 @@ func formatArgs(args []string) string {
 }
 
 func mapStorageError(err error) error {
-	switch storage.GetErrorCode(err) {
-	case storage.NotFound:
+	switch internalErrors.GetErrorCode(err) {
+	case internalErrors.NotFound:
 		return gomoduleservice.NewErrorf(gomoduleservice.NotFound, "%w", err)
 	default:
 		return err
