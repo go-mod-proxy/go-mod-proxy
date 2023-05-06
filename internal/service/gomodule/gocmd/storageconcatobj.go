@@ -5,16 +5,11 @@ import (
 	"encoding/binary"
 	"fmt"
 	"io"
+	"math"
 	"os"
 	"time"
 
 	log "github.com/sirupsen/logrus"
-)
-
-const (
-	uintMax        = ^uint(0)
-	intMax         = int(uintMax >> 1)
-	intMaxAsUint64 = uint64(intMax)
 )
 
 type readerForCreateConcatObj struct {
@@ -118,7 +113,7 @@ func parseConcatObjCommon(data io.Reader) (commitTime time.Time, goModPrefix []b
 		err = fmt.Errorf("data unexpectedly does not start with two valid 64-bit varints")
 		return
 	}
-	if goModLengthUint64 > intMaxAsUint64 {
+	if goModLengthUint64 > uint64(math.MaxInt) {
 		err = fmt.Errorf("data's second 64-bit varint (as uint) is too large")
 		return
 	}

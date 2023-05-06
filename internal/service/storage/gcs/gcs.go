@@ -26,9 +26,6 @@ import (
 )
 
 const (
-	uint64Max = ^uint64(0)
-	int64Max  = int64(uint64Max >> 1)
-
 	uploadBaseURL = "https://storage.googleapis.com/upload/storage/v1"
 	baseURL       = "https://storage.googleapis.com/storage/v1"
 )
@@ -145,16 +142,10 @@ func (s *Storage) CreateObjectExclusively(ctx context.Context,
 		fmt.Fprintf(&reqBodyPrefix, "\r\n--%s\r\n\r\n", boundaryStr)
 
 		reqBodySuffix := []byte(fmt.Sprintf("\r\n--%s\r\n", boundaryStr))
-		contentLength := int64(reqBodyPrefix.Len())
-		if int64Max-contentLength < dataLength {
+		contentLength, ok := util.SumInt64(int64(reqBodyPrefix.Len()), dataLength, int64(len(reqBodySuffix)))
+		if !ok {
 			return fmt.Errorf("integer overflow")
 		}
-		contentLength += dataLength
-		if int64Max-contentLength < int64(len(reqBodySuffix)) {
-			return fmt.Errorf("integer overflow")
-		}
-		contentLength += int64(len(reqBodySuffix))
-
 		req, err := http.NewRequestWithContext(ctx, method, url, util.NewConcatReader(reqBodyPrefix.Bytes(), data, reqBodySuffix, nil))
 		if err != nil {
 			return fmt.Errorf("error creating request %s %s: %w", method, url, err)
