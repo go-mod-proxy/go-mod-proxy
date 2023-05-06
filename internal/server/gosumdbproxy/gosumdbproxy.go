@@ -10,7 +10,7 @@ import (
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
 
-	"github.com/go-mod-proxy/go-mod-proxy/internal/pkg/config"
+	"github.com/go-mod-proxy/go-mod-proxy/internal/config"
 )
 
 type ServerOptions struct {

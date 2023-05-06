@@ -10,9 +10,9 @@ import (
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
 
-	"github.com/go-mod-proxy/go-mod-proxy/internal/pkg/config"
-	"github.com/go-mod-proxy/go-mod-proxy/internal/pkg/github"
-	"github.com/go-mod-proxy/go-mod-proxy/internal/pkg/server/credentialhelper/git"
+	"github.com/go-mod-proxy/go-mod-proxy/internal/config"
+	"github.com/go-mod-proxy/go-mod-proxy/internal/github"
+	"github.com/go-mod-proxy/go-mod-proxy/internal/server/credentialhelper/git"
 )
 
 type ServerOptions struct {

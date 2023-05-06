@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"net/http"
 
-	gomoduleservice "github.com/go-mod-proxy/go-mod-proxy/internal/pkg/service/gomodule"
-	"github.com/go-mod-proxy/go-mod-proxy/internal/pkg/util"
+	gomoduleservice "github.com/go-mod-proxy/go-mod-proxy/internal/service/gomodule"
+	"github.com/go-mod-proxy/go-mod-proxy/internal/util"
 )
 
 func Latest(ctx context.Context, baseURL string, client *http.Client, modulePath string) (*gomoduleservice.Info, error) {

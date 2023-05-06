@@ -17,12 +17,12 @@ import (
 	log "github.com/sirupsen/logrus"
 	module "golang.org/x/mod/module"
 
-	"github.com/go-mod-proxy/go-mod-proxy/internal/pkg/config"
-	"github.com/go-mod-proxy/go-mod-proxy/internal/pkg/git"
-	"github.com/go-mod-proxy/go-mod-proxy/internal/pkg/modproxyclient"
-	gomoduleservice "github.com/go-mod-proxy/go-mod-proxy/internal/pkg/service/gomodule"
-	"github.com/go-mod-proxy/go-mod-proxy/internal/pkg/service/storage"
-	"github.com/go-mod-proxy/go-mod-proxy/internal/pkg/util"
+	"github.com/go-mod-proxy/go-mod-proxy/internal/config"
+	"github.com/go-mod-proxy/go-mod-proxy/internal/git"
+	"github.com/go-mod-proxy/go-mod-proxy/internal/modproxyclient"
+	gomoduleservice "github.com/go-mod-proxy/go-mod-proxy/internal/service/gomodule"
+	"github.com/go-mod-proxy/go-mod-proxy/internal/service/storage"
+	"github.com/go-mod-proxy/go-mod-proxy/internal/util"
 )
 
 const (

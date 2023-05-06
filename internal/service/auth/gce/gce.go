@@ -7,7 +7,7 @@ import (
 	jaspercompute "github.com/jbrekelmans/go-lib/auth/google/compute"
 	jasperhttp "github.com/jbrekelmans/go-lib/http"
 
-	"github.com/go-mod-proxy/go-mod-proxy/internal/pkg/service/auth"
+	"github.com/go-mod-proxy/go-mod-proxy/internal/service/auth"
 )
 
 // Authenticator authenticates GCE instance identity tokens.

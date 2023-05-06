@@ -6,9 +6,9 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	servercommon "github.com/go-mod-proxy/go-mod-proxy/internal/pkg/server/common"
-	serviceauth "github.com/go-mod-proxy/go-mod-proxy/internal/pkg/service/auth"
-	"github.com/go-mod-proxy/go-mod-proxy/internal/pkg/util"
+	servercommon "github.com/go-mod-proxy/go-mod-proxy/internal/server/common"
+	serviceauth "github.com/go-mod-proxy/go-mod-proxy/internal/service/auth"
+	"github.com/go-mod-proxy/go-mod-proxy/internal/util"
 )
 
 func (s *Server) authenticateUserPassword(w http.ResponseWriter, req *http.Request) {

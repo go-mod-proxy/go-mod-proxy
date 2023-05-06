@@ -6,7 +6,7 @@ import (
 	jasperhttp "github.com/jbrekelmans/go-lib/http"
 	log "github.com/sirupsen/logrus"
 
-	servercommon "github.com/go-mod-proxy/go-mod-proxy/internal/pkg/server/common"
+	servercommon "github.com/go-mod-proxy/go-mod-proxy/internal/server/common"
 )
 
 func responseUnauthorized(w http.ResponseWriter, realm string) {

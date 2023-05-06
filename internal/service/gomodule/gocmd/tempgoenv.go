@@ -11,7 +11,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/go-mod-proxy/go-mod-proxy/internal/pkg/util"
+	"github.com/go-mod-proxy/go-mod-proxy/internal/util"
 )
 
 func getTempGoEnvBaseEnviron() *util.Environ {

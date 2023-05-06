@@ -10,14 +10,14 @@ import (
 	log "github.com/sirupsen/logrus"
 	"gopkg.in/square/go-jose.v2/json"
 
-	"github.com/go-mod-proxy/go-mod-proxy/internal/pkg/config"
-	servercommon "github.com/go-mod-proxy/go-mod-proxy/internal/pkg/server/common"
-	servergomodule "github.com/go-mod-proxy/go-mod-proxy/internal/pkg/server/gomodule"
-	servergosumdbproxy "github.com/go-mod-proxy/go-mod-proxy/internal/pkg/server/gosumdbproxy"
-	serviceauth "github.com/go-mod-proxy/go-mod-proxy/internal/pkg/service/auth"
-	serviceauthaccesstoken "github.com/go-mod-proxy/go-mod-proxy/internal/pkg/service/auth/accesstoken"
-	serviceauthgce "github.com/go-mod-proxy/go-mod-proxy/internal/pkg/service/auth/gce"
-	servicegomodule "github.com/go-mod-proxy/go-mod-proxy/internal/pkg/service/gomodule"
+	"github.com/go-mod-proxy/go-mod-proxy/internal/config"
+	servercommon "github.com/go-mod-proxy/go-mod-proxy/internal/server/common"
+	servergomodule "github.com/go-mod-proxy/go-mod-proxy/internal/server/gomodule"
+	servergosumdbproxy "github.com/go-mod-proxy/go-mod-proxy/internal/server/gosumdbproxy"
+	serviceauth "github.com/go-mod-proxy/go-mod-proxy/internal/service/auth"
+	serviceauthaccesstoken "github.com/go-mod-proxy/go-mod-proxy/internal/service/auth/accesstoken"
+	serviceauthgce "github.com/go-mod-proxy/go-mod-proxy/internal/service/auth/gce"
+	servicegomodule "github.com/go-mod-proxy/go-mod-proxy/internal/service/gomodule"
 )
 
 type ServerOptions struct {
