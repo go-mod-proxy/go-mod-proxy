@@ -7,9 +7,6 @@ import (
 	"strings"
 
 	"github.com/alessio/shellescape"
-
-	internalErrors "github.com/go-mod-proxy/go-mod-proxy/internal/errors"
-	gomoduleservice "github.com/go-mod-proxy/go-mod-proxy/internal/service/gomodule"
 )
 
 func fdSeekToStart(fd *os.File) error {
@@ -32,13 +29,4 @@ func formatArgs(args []string) string {
 		sb.WriteString(shellescape.Quote(arg))
 	}
 	return sb.String()
-}
-
-func mapStorageError(err error) error {
-	switch internalErrors.GetErrorCode(err) {
-	case internalErrors.NotFound:
-		return gomoduleservice.NewErrorf(gomoduleservice.NotFound, "%w", err)
-	default:
-		return err
-	}
 }
