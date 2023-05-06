@@ -16,7 +16,7 @@ func UnmarshalJSON(reader io.Reader, v any, disallowUnknownFields bool) error {
 	}
 	var vNext any
 	if err := decoder.Decode(&vNext); err == nil {
-		return fmt.Errorf("unexpectedly got a sequence of multiple JSON values when a single JSON value is expected")
+		return fmt.Errorf("unexpected seq of multiple JSON values")
 	} else if err != io.EOF {
 		return err
 	}
