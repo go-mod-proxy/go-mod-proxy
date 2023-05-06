@@ -82,7 +82,7 @@ func (s *Storage) CreateObjectExclusively(ctx context.Context,
 	// than 2 or more requests with s.gcsClientBucket approach (assuming non-empty body), and
 	// sets the fields parameter.
 	// A disadvantage is that there's more code in our case.
-	method := http.MethodPost
+	const method = http.MethodPost
 	urlQuery := url.Values{}
 	urlQuery.Set("ifGenerationMatch", "0")
 
@@ -234,7 +234,7 @@ func (s *Storage) GetObjectMetadata(ctx context.Context, name string) (storage.O
 }
 
 func (s *Storage) ListObjects(ctx context.Context, opts storage.ObjectListOptions) (*storage.ObjectList, error) {
-	method := http.MethodGet
+	const method = http.MethodGet
 	urlQuery := url.Values{}
 	if opts.MaxResults < 0 {
 		return nil, fmt.Errorf("opts.MaxResults must be non-negative")

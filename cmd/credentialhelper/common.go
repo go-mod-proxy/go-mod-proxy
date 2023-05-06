@@ -17,7 +17,7 @@ func doRequest(ctx context.Context, port int, reqBody, respBody any) error {
 	httpClient := &http.Client{
 		Transport: transport,
 	}
-	method := http.MethodPost
+	const method = http.MethodPost
 	url := fmt.Sprintf("http://127.0.0.1:%d/git", port)
 	reqBodyBytes, err := json.Marshal(reqBody)
 	if err != nil {
