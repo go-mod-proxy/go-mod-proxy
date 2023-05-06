@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"strings"
@@ -30,10 +31,15 @@ func doRequestCommon(ctx context.Context, baseURL string, client *http.Client, m
 	}
 	if resp.StatusCode != http.StatusOK {
 		defer resp.Body.Close()
+		respBodyBytes, _ := io.ReadAll(resp.Body)
 		if resp.StatusCode == http.StatusNotFound || resp.StatusCode == http.StatusGone {
 			return nil, ErrNotFound
 		}
-		return nil, fmt.Errorf("server gave unexpected %d-response to %s %s", resp.StatusCode, req.Method, url)
+		return nil, fmt.Errorf("server gave unexpected %d-response to request %s %s: %s",
+			resp.StatusCode,
+			resp.Request.Method,
+			resp.Request.URL.String(),
+			string(respBodyBytes))
 	}
 	return resp, nil
 }

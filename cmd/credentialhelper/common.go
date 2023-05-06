@@ -5,10 +5,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 
 	"github.com/hashicorp/go-cleanhttp"
+
+	"github.com/go-mod-proxy/go-mod-proxy/internal/util"
 )
 
 func doRequest(ctx context.Context, port int, reqBody, respBody any) error {
@@ -17,7 +18,7 @@ func doRequest(ctx context.Context, port int, reqBody, respBody any) error {
 	httpClient := &http.Client{
 		Transport: transport,
 	}
-	method := http.MethodPost
+	const method = http.MethodPost
 	url := fmt.Sprintf("http://127.0.0.1:%d/git", port)
 	reqBodyBytes, err := json.Marshal(reqBody)
 	if err != nil {
@@ -33,17 +34,5 @@ func doRequest(ctx context.Context, port int, reqBody, respBody any) error {
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
-	respBodyBytes, err2 := io.ReadAll(resp.Body)
-	if resp.StatusCode != 200 {
-		return fmt.Errorf("response of request %s %s has unexpected status %d, body: %s", method, url, resp.StatusCode, string(respBodyBytes))
-	}
-	if err2 != nil {
-		return fmt.Errorf("error reading body of success response of request %s %s: %w", method, url, err)
-	}
-	err = json.Unmarshal(respBodyBytes, respBody)
-	if err != nil {
-		return fmt.Errorf("error unmarshalling body of success response of request %s %s: %w", method, url, err)
-	}
-	return nil
+	return util.ReadJSON200Response(resp, respBody, false)
 }

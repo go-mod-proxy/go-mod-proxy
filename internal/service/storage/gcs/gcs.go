@@ -82,7 +82,7 @@ func (s *Storage) CreateObjectExclusively(ctx context.Context,
 	// than 2 or more requests with s.gcsClientBucket approach (assuming non-empty body), and
 	// sets the fields parameter.
 	// A disadvantage is that there's more code in our case.
-	method := http.MethodPost
+	const method = http.MethodPost
 	urlQuery := url.Values{}
 	urlQuery.Set("ifGenerationMatch", "0")
 
@@ -169,21 +169,21 @@ func (s *Storage) CreateObjectExclusively(ctx context.Context,
 		if resp.StatusCode == http.StatusOK {
 			_, err := io.Copy(io.Discard, respBody)
 			if err != nil {
-				log.Errorf("error reading body of %d-response to %s %s: %v", resp.StatusCode, method, url, err)
+				log.Errorf("error reading body of %d-response to %s %s: %v", resp.StatusCode, resp.Request.Method, resp.Request.URL.String(), err)
 			}
 			break
 		}
 		respBodyBytes, err := io.ReadAll(respBody)
 		if err != nil {
-			log.Errorf("error reading body of %d-response to %s %s: %v", resp.StatusCode, method, url, err)
+			log.Errorf("error reading body of %d-response to %s %s: %v", resp.StatusCode, resp.Request.Method, resp.Request.URL.String(), err)
 		}
 		err = respBody.Close()
 		respBody = nil
 		if err != nil {
-			log.Errorf("error closing body of %d-response to %s %s: %v", resp.StatusCode, method, url, err)
+			log.Errorf("error closing body of %d-response to %s %s: %v", resp.StatusCode, resp.Request.Method, resp.Request.URL.String(), err)
 		}
 		if resp.StatusCode == http.StatusTooManyRequests || (500 <= resp.StatusCode && resp.StatusCode <= 599) {
-			log.Errorf("retrying because got intermittent %d-response to %s %s: %s", resp.StatusCode, method, url, string(respBodyBytes))
+			log.Errorf("retrying because got intermittent %d-response to %s %s: %s", resp.StatusCode, resp.Request.Method, resp.Request.URL.String(), string(respBodyBytes))
 			select {
 			case <-ctx.Done():
 				return ctx.Err()
@@ -192,9 +192,9 @@ func (s *Storage) CreateObjectExclusively(ctx context.Context,
 			continue
 		}
 		if resp.StatusCode == http.StatusPreconditionFailed {
-			return storage.NewErrorf(storage.PreconditionFailed, "got %d-response to %s %s: %s", resp.StatusCode, method, url, string(respBodyBytes))
+			return storage.NewErrorf(storage.PreconditionFailed, "got %d-response to %s %s: %s", resp.StatusCode, resp.Request.Method, resp.Request.URL.String(), string(respBodyBytes))
 		}
-		return fmt.Errorf("got unexpected %d-response to %s %s: %s", resp.StatusCode, method, url, string(respBodyBytes))
+		return fmt.Errorf("got unexpected %d-response to %s %s: %s", resp.StatusCode, resp.Request.Method, resp.Request.URL.String(), string(respBodyBytes))
 	}
 	return nil
 }
@@ -234,7 +234,7 @@ func (s *Storage) GetObjectMetadata(ctx context.Context, name string) (storage.O
 }
 
 func (s *Storage) ListObjects(ctx context.Context, opts storage.ObjectListOptions) (*storage.ObjectList, error) {
-	method := http.MethodGet
+	const method = http.MethodGet
 	urlQuery := url.Values{}
 	if opts.MaxResults < 0 {
 		return nil, fmt.Errorf("opts.MaxResults must be non-negative")
@@ -290,7 +290,11 @@ func (s *Storage) ListObjects(ctx context.Context, opts storage.ObjectListOption
 				NextPageToken string `json:"nextPageToken"`
 			}{}
 			if err := util.UnmarshalJSON(respBodyReader, respBody, false); err != nil {
-				return nil, fmt.Errorf("error unmarshalling body of %d-response to %s %s: %v", resp.StatusCode, method, url, err)
+				return nil, fmt.Errorf("error unmarshalling body of %d-response to %s %s: %w",
+					resp.StatusCode,
+					resp.Request.Method,
+					resp.Request.URL.String(),
+					err)
 			}
 			objList := &storage.ObjectList{
 				NextPageToken: respBody.NextPageToken,
@@ -304,15 +308,27 @@ func (s *Storage) ListObjects(ctx context.Context, opts storage.ObjectListOption
 		}
 		respBodyBytes, err2 := io.ReadAll(respBodyReader)
 		if err2 != nil {
-			log.Errorf("error reading body of %d-response to %s %s: %v", resp.StatusCode, method, url, err2)
+			log.Tracef("error reading body of %d-response to %s %s: %v",
+				resp.StatusCode,
+				resp.Request.Method,
+				resp.Request.URL.String(),
+				err2)
 		}
 		err2 = respBodyReader.Close()
 		respBodyReader = nil
 		if err2 != nil {
-			log.Errorf("error closing body of %d-response to %s %s: %v", resp.StatusCode, method, url, err2)
+			log.Tracef("error closing body of %d-response to %s %s: %v",
+				resp.StatusCode,
+				resp.Request.Method,
+				resp.Request.URL.String(),
+				err2)
 		}
 		if resp.StatusCode == http.StatusTooManyRequests || (500 <= resp.StatusCode && resp.StatusCode <= 599) {
-			log.Errorf("retrying because got intermittent %d-response to %s %s: %s", resp.StatusCode, method, url, string(respBodyBytes))
+			log.Errorf("retrying because got intermittent %d-response to %s %s: %s",
+				resp.StatusCode,
+				resp.Request.Method,
+				resp.Request.URL.String(),
+				string(respBodyBytes))
 			select {
 			case <-ctx.Done():
 				return nil, ctx.Err()
@@ -320,7 +336,11 @@ func (s *Storage) ListObjects(ctx context.Context, opts storage.ObjectListOption
 			}
 			continue
 		}
-		return nil, fmt.Errorf("got unexpected %d-response to %s %s: %s", resp.StatusCode, method, url, string(respBodyBytes))
+		return nil, fmt.Errorf("got unexpected %d-response to %s %s: %s",
+			resp.StatusCode,
+			resp.Request.Method,
+			resp.Request.URL.String(),
+			string(respBodyBytes))
 	}
 }
 
