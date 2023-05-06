@@ -53,32 +53,30 @@ type goModuleInfo struct {
 }
 
 type ServiceOptions struct {
-	GitCredentialHelperShell          string
-	HTTPProxyInfo                     *config.HTTPProxyInfo
-	HTTPTransport                     http.RoundTripper
-	MaxParallelCommands               int
-	ParentProxy                       *url.URL
-	PrivateModules                    []*config.PrivateModulesElement
-	PublicModules                     *config.PublicModules
-	ReadAfterListIsStronglyConsistent bool
-	ScratchDir                        string
-	Storage                           storage.Storage
+	GitCredentialHelperShell string
+	HTTPProxyInfo            *config.HTTPProxyInfo
+	HTTPTransport            http.RoundTripper
+	MaxParallelCommands      int
+	ParentProxy              *url.URL
+	PrivateModules           []*config.PrivateModulesElement
+	PublicModules            *config.PublicModules
+	ScratchDir               string
+	Storage                  storage.Storage
 }
 
 type Service struct {
-	envGoProxy                        string
-	gitCredentialHelperShell          string
-	goBinFile                         string
-	httpClient                        *http.Client
-	httpProxyInfo                     *config.HTTPProxyInfo
-	parentProxyURL                    string
-	privateModules                    []*config.PrivateModulesElement
-	publicModulesGoSumDBEnvVar        string
-	readAfterListIsStronglyConsistent bool
-	runCmdResourcePool                *maxParallelismResourcePool
-	scratchDir                        string
-	storage                           storage.Storage
-	tempGoEnvBaseEnviron              *util.Environ
+	envGoProxy                 string
+	gitCredentialHelperShell   string
+	goBinFile                  string
+	httpClient                 *http.Client
+	httpProxyInfo              *config.HTTPProxyInfo
+	parentProxyURL             string
+	privateModules             []*config.PrivateModulesElement
+	publicModulesGoSumDBEnvVar string
+	runCmdResourcePool         *maxParallelismResourcePool
+	scratchDir                 string
+	storage                    storage.Storage
+	tempGoEnvBaseEnviron       *util.Environ
 }
 
 var _ gomoduleservice.Service = (*Service)(nil)
@@ -141,14 +139,13 @@ func NewService(opts ServiceOptions) (s *Service, err error) {
 		httpClient: &http.Client{
 			Transport: opts.HTTPTransport,
 		},
-		httpProxyInfo:                     opts.HTTPProxyInfo,
-		privateModules:                    opts.PrivateModules,
-		publicModulesGoSumDBEnvVar:        publicModulesGoSumDBEnvVar,
-		scratchDir:                        scratchDir2,
-		readAfterListIsStronglyConsistent: opts.ReadAfterListIsStronglyConsistent,
-		runCmdResourcePool:                runCmdResourcePool,
-		storage:                           opts.Storage,
-		tempGoEnvBaseEnviron:              getTempGoEnvBaseEnviron(),
+		httpProxyInfo:              opts.HTTPProxyInfo,
+		privateModules:             opts.PrivateModules,
+		publicModulesGoSumDBEnvVar: publicModulesGoSumDBEnvVar,
+		scratchDir:                 scratchDir2,
+		runCmdResourcePool:         runCmdResourcePool,
+		storage:                    opts.Storage,
+		tempGoEnvBaseEnviron:       getTempGoEnvBaseEnviron(),
 	}
 	parentProxyStr := opts.ParentProxy.String()
 	// , is valid in URLs, but illegal in GOPROXY environment variable
@@ -605,9 +602,6 @@ func (s *Service) Latest(ctx context.Context, modulePath string) (info *gomodule
 		// checking the cache than we gain.
 		info, err = modproxyclient.Latest(ctx, s.parentProxyURL, s.httpClient, modulePath)
 		if err != nil {
-			return
-		}
-		if !s.readAfterListIsStronglyConsistent {
 			return
 		}
 		log.Tracef("@latest for module %#v is %#v (from parent proxy), ensuring version is cached...", modulePath, info.Version)

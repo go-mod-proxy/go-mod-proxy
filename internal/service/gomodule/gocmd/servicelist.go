@@ -22,7 +22,7 @@ func (s *Service) List(ctx context.Context, modulePath string) (io.ReadCloser, e
 		return nil, err
 	}
 	privateModulesElement := s.getPrivateModulesElement(modulePath)
-	if privateModulesElement == nil && !s.readAfterListIsStronglyConsistent {
+	if privateModulesElement == nil {
 		goListVersions, err := s.listViaParentProxy(ctx, modulePath)
 		if err != nil {
 			return nil, err
@@ -47,11 +47,7 @@ func (s *Service) List(ctx context.Context, modulePath string) (io.ReadCloser, e
 	var goListVersions []string
 	go func() {
 		var err error
-		if privateModulesElement == nil {
-			goListVersions, err = s.listViaParentProxy(ctx, modulePath)
-		} else {
-			goListVersions, err = s.listGoCmd(ctx, modulePath)
-		}
+		goListVersions, err = s.listGoCmd(ctx, modulePath)
 		errChan <- err
 	}()
 	var err error
@@ -76,44 +72,8 @@ func (s *Service) List(ctx context.Context, modulePath string) (io.ReadCloser, e
 	if err != nil {
 		return nil, err
 	}
-	if !s.readAfterListIsStronglyConsistent {
-		for _, version := range goListVersions {
-			versionMap[version] = struct{}{}
-		}
-	} else {
-		var waitGroup sync.WaitGroup
-		for _, version := range moveSliceElementsThatAreInMapToBack(goListVersions, versionMap) {
-			version := version
-			runCmdResource, err := s.runCmdResourcePool.acquire(ctx)
-			if err != nil {
-				return nil, err
-			}
-			waitGroup.Add(1)
-			go func() {
-				defer runCmdResource.release()
-				defer waitGroup.Done()
-				tempGoEnv, err := s.newTempGoEnv()
-				if err != nil {
-					log.Error(err)
-					return
-				}
-				defer func() {
-					err := tempGoEnv.removeRef()
-					if err != nil {
-						log.Errorf("error removing tmpDir %#v of *tempGoEnv: %v", tempGoEnv.TmpDir, err)
-					}
-				}()
-				_, _, _, err = s.getGoModuleAndIndexIfNeeded(ctx, tempGoEnv, &module.Version{Path: modulePath, Version: version}, runCmdResource)
-				if err != nil {
-					log.Error(err)
-					return
-				}
-				versionMapMutex.Lock()
-				versionMap[version] = struct{}{}
-				versionMapMutex.Unlock()
-			}()
-		}
-		waitGroup.Wait()
+	for _, version := range goListVersions {
+		versionMap[version] = struct{}{}
 	}
 	var sb strings.Builder
 	for version := range versionMap {
@@ -242,27 +202,4 @@ func (s *Service) listViaParentProxy(ctx context.Context, modulePath string) (go
 	// This also avoids an unnecessary second request performed by a "go list" command when GET "/@v/list" returns zero versions.
 	goListVersions, err = modproxyclient.List(ctx, s.parentProxyURL, s.httpClient, modulePath)
 	return
-}
-
-// moveSliceElementsThatAreInMapToBack swaps elements in s so that all elements in m are in a continuous subslice ending at the end of s.
-// The relative ordering of elements is not preserved.
-// moveSliceElementsThatAreInMapToBack returns a subslice of s so that no elemenets in the subslice are in m.
-func moveSliceElementsThatAreInMapToBack(s []string, m map[string]struct{}) []string {
-	i := 0
-	end := len(s)
-	for i < end {
-		if _, ok := m[s[i]]; ok {
-			swap(s, i, end-1)
-			end--
-		} else {
-			i++
-		}
-	}
-	return s[:end]
-}
-
-func swap(s []string, i, j int) {
-	t := s[i]
-	s[i] = s[j]
-	s[j] = t
 }
