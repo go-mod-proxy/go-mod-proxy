@@ -10,7 +10,7 @@ type Regexp struct {
 }
 
 // UnmarshalYAML implements the Unmarshaler interface.
-func (c *Regexp) UnmarshalYAML(unmarshal func(interface{}) error) error {
+func (c *Regexp) UnmarshalYAML(unmarshal func(any) error) error {
 	var expr string
 	if err := unmarshal(&expr); err != nil {
 		return err

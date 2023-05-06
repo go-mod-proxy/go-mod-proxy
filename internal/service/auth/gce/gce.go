@@ -37,7 +37,7 @@ func NewAuthenticator(
 // Authenticate decodes and verifies a GCE instance identity JWT token and
 // either returns a non-nil *auth.Identity (first return parameter) or a non-nil error (second return parameter).
 // The *auth.Identity is looked up from the auth.IdentityStore passed to NewAuthenticator.
-func (a *Authenticator) Authenticate(ctx context.Context, bearerToken string) (interface{}, error) {
+func (a *Authenticator) Authenticate(ctx context.Context, bearerToken string) (any, error) {
 	instanceIdentity, err := a.computeInstanceIdentityVerifier.Verify(ctx, bearerToken)
 	if err != nil {
 		if _, ok := err.(*jaspercompute.VerifyError); ok {

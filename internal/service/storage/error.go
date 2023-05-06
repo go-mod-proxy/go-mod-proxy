@@ -48,7 +48,7 @@ func NewError(code ErrorCode, s string) error {
 	}
 }
 
-func NewErrorf(code ErrorCode, format string, args ...interface{}) error {
+func NewErrorf(code ErrorCode, format string, args ...any) error {
 	err := fmt.Errorf(format, args...)
 	return &errorStruct{
 		c:   code,
