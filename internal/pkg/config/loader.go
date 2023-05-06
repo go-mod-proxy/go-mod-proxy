@@ -15,8 +15,8 @@ import (
 	jasperurl "github.com/jbrekelmans/go-lib/url"
 	"gopkg.in/yaml.v2"
 
-	internalhttpproxy "github.com/go-mod-proxy/go-mod-proxy/go/internal/pkg/httpproxy"
-	"github.com/go-mod-proxy/go-mod-proxy/go/internal/pkg/util"
+	internalhttpproxy "github.com/go-mod-proxy/go-mod-proxy/internal/pkg/httpproxy"
+	"github.com/go-mod-proxy/go-mod-proxy/internal/pkg/util"
 )
 
 // LoadFromYAMLFile loads configuration from a YAML file.

@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/go-mod-proxy/go-mod-proxy/go/internal/pkg/util"
+	"github.com/go-mod-proxy/go-mod-proxy/internal/pkg/util"
 )
 
 func Test_WriteConfigSectionName_SuccessDot(t *testing.T) {

@@ -11,7 +11,7 @@ import (
 
 	jasperurl "github.com/jbrekelmans/go-lib/url"
 
-	"github.com/go-mod-proxy/go-mod-proxy/go/internal/pkg/util"
+	"github.com/go-mod-proxy/go-mod-proxy/internal/pkg/util"
 )
 
 type domainPort struct {
@@ -43,13 +43,14 @@ type NoProxy struct {
 
 // ParseNoProxy parses values of NO_PROXY environment variables similar to how "http/httpproxy".FromEnvironment
 // parses them, with the following differences:
-// 1. If the port of a host is empty (i.e. "example.com:") then an error is returned.
-// 2. If the port of a host is a named port (i.e. "example.com:http") then an error is returned.
-// 3. If the port of a host is not positive (i.e. "zeronotallowed.example.com:0") then an error is returned.
-// 4. If the hostname of a host has non-ASCII characters then an error is returned. A hostname must be normalized as per
-//		"golang.org/x/net/idna".Lookup.ToASCII (otherwise it never matches anything). NOTE: validation of hostnames can be stricter, however
-// 		this level of strictness matches the "http/httpproxy" and "http" Golang packages (despite lower level code potentially being
-//    stricter).
+//  1. If the port of a host is empty (i.e. "example.com:") then an error is returned.
+//  2. If the port of a host is a named port (i.e. "example.com:http") then an error is returned.
+//  3. If the port of a host is not positive (i.e. "zeronotallowed.example.com:0") then an error is returned.
+//  4. If the hostname of a host has non-ASCII characters then an error is returned. A hostname must be normalized as per
+//     "golang.org/x/net/idna".Lookup.ToASCII (otherwise it never matches anything). NOTE: validation of hostnames can be stricter, however
+//     this level of strictness matches the "http/httpproxy" and "http" Golang packages (despite lower level code potentially being
+//     stricter).
+//
 // This function always returns a non-nil *NoProxy and any error returned is suitable for printing in logs, but the error's Error() may
 // return a string with line feeds. As such, this function is suitable for validation of the NO_PROXY environment variable.
 func ParseNoProxy(noProxyStr string) (*NoProxy, error) {
