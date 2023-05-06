@@ -31,6 +31,9 @@ jobs:
           args: --timeout 10m
           version: latest
 
+      - name: "🧐 go vet"
+        run: go vet ./...
+
       - name: "🏗️ Docker Build"
         run: docker build --tag=jbrekelmans/go-module-proxy:latest .
 
