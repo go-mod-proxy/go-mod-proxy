@@ -290,7 +290,11 @@ func (s *Storage) ListObjects(ctx context.Context, opts storage.ObjectListOption
 				NextPageToken string `json:"nextPageToken"`
 			}{}
 			if err := util.UnmarshalJSON(respBodyReader, respBody, false); err != nil {
-				return nil, fmt.Errorf("error unmarshalling body of %d-response to %s %s: %w", resp.StatusCode, method, url, err)
+				return nil, fmt.Errorf("error unmarshalling body of %d-response to %s %s: %w",
+					resp.StatusCode,
+					resp.Request.Method,
+					resp.Request.URL.String(),
+					err)
 			}
 			objList := &storage.ObjectList{
 				NextPageToken: respBody.NextPageToken,
@@ -304,15 +308,27 @@ func (s *Storage) ListObjects(ctx context.Context, opts storage.ObjectListOption
 		}
 		respBodyBytes, err2 := io.ReadAll(respBodyReader)
 		if err2 != nil {
-			log.Errorf("error reading body of %d-response to %s %s: %v", resp.StatusCode, method, url, err2)
+			log.Tracef("error reading body of %d-response to %s %s: %v",
+				resp.StatusCode,
+				resp.Request.Method,
+				resp.Request.URL.String(),
+				err2)
 		}
 		err2 = respBodyReader.Close()
 		respBodyReader = nil
 		if err2 != nil {
-			log.Errorf("error closing body of %d-response to %s %s: %v", resp.StatusCode, method, url, err2)
+			log.Tracef("error closing body of %d-response to %s %s: %v",
+				resp.StatusCode,
+				resp.Request.Method,
+				resp.Request.URL.String(),
+				err2)
 		}
 		if resp.StatusCode == http.StatusTooManyRequests || (500 <= resp.StatusCode && resp.StatusCode <= 599) {
-			log.Errorf("retrying because got intermittent %d-response to %s %s: %s", resp.StatusCode, method, url, string(respBodyBytes))
+			log.Errorf("retrying because got intermittent %d-response to %s %s: %s",
+				resp.StatusCode,
+				resp.Request.Method,
+				resp.Request.URL.String(),
+				string(respBodyBytes))
 			select {
 			case <-ctx.Done():
 				return nil, ctx.Err()
@@ -320,7 +336,11 @@ func (s *Storage) ListObjects(ctx context.Context, opts storage.ObjectListOption
 			}
 			continue
 		}
-		return nil, fmt.Errorf("got unexpected %d-response to %s %s: %s", resp.StatusCode, method, url, string(respBodyBytes))
+		return nil, fmt.Errorf("got unexpected %d-response to %s %s: %s",
+			resp.StatusCode,
+			resp.Request.Method,
+			resp.Request.URL.String(),
+			string(respBodyBytes))
 	}
 }
 
