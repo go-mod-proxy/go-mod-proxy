@@ -290,7 +290,7 @@ func (s *Storage) ListObjects(ctx context.Context, opts storage.ObjectListOption
 				NextPageToken string `json:"nextPageToken"`
 			}{}
 			if err := util.UnmarshalJSON(respBodyReader, respBody, false); err != nil {
-				return nil, fmt.Errorf("error unmarshalling body of %d-response to %s %s: %v", resp.StatusCode, method, url, err)
+				return nil, fmt.Errorf("error unmarshalling body of %d-response to %s %s: %w", resp.StatusCode, method, url, err)
 			}
 			objList := &storage.ObjectList{
 				NextPageToken: respBody.NextPageToken,
