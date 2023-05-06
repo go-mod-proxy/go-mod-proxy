@@ -17,8 +17,8 @@ func Test_moveSliceElementsThatAreInMapToBack(t *testing.T) {
 		{
 			S: []string{"v1", "v2", "v3", "v4", "v5"},
 			M: map[string]struct{}{
-				"v1": struct{}{},
-				"v3": struct{}{},
+				"v1": {},
+				"v3": {},
 			},
 			Expected:       []string{"v5", "v2", "v4", "v3", "v1"},
 			ExpectedLength: 3,
@@ -26,7 +26,7 @@ func Test_moveSliceElementsThatAreInMapToBack(t *testing.T) {
 		{
 			S: []string{"v1"},
 			M: map[string]struct{}{
-				"v1": struct{}{},
+				"v1": {},
 			},
 			Expected:       []string{"v1"},
 			ExpectedLength: 0,

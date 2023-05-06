@@ -9,8 +9,10 @@ import (
 // TODO finish this
 // Talk about canonicalization of cache keys.
 // Is this required at all for git credential helpers? It seems safe to run "net/idna".ToASCII first.
-//		Figure out if "net/http"'s conditional ToASCII call (see idnaASCII in https://golang.org/src/net/http/request.go?s=23078:23124)
-//		is needed by us too.
+//
+//	Figure out if "net/http"'s conditional ToASCII call (see idnaASCII in https://golang.org/src/net/http/request.go?s=23078:23124)
+//	is needed by us too.
+//
 // 1. Ports complicate canonicalization logic because in general we don't want to know about protocols used.
 // 2. Go requires a dot in the host.
 // It is stricter than what is accepted by net.Dial* functions (and (*net.Dialer).Dial* functions).
