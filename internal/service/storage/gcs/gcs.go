@@ -169,21 +169,21 @@ func (s *Storage) CreateObjectExclusively(ctx context.Context,
 		if resp.StatusCode == http.StatusOK {
 			_, err := io.Copy(io.Discard, respBody)
 			if err != nil {
-				log.Errorf("error reading body of %d-response to %s %s: %v", resp.StatusCode, method, url, err)
+				log.Errorf("error reading body of %d-response to %s %s: %v", resp.StatusCode, resp.Request.Method, resp.Request.URL.String(), err)
 			}
 			break
 		}
 		respBodyBytes, err := io.ReadAll(respBody)
 		if err != nil {
-			log.Errorf("error reading body of %d-response to %s %s: %v", resp.StatusCode, method, url, err)
+			log.Errorf("error reading body of %d-response to %s %s: %v", resp.StatusCode, resp.Request.Method, resp.Request.URL.String(), err)
 		}
 		err = respBody.Close()
 		respBody = nil
 		if err != nil {
-			log.Errorf("error closing body of %d-response to %s %s: %v", resp.StatusCode, method, url, err)
+			log.Errorf("error closing body of %d-response to %s %s: %v", resp.StatusCode, resp.Request.Method, resp.Request.URL.String(), err)
 		}
 		if resp.StatusCode == http.StatusTooManyRequests || (500 <= resp.StatusCode && resp.StatusCode <= 599) {
-			log.Errorf("retrying because got intermittent %d-response to %s %s: %s", resp.StatusCode, method, url, string(respBodyBytes))
+			log.Errorf("retrying because got intermittent %d-response to %s %s: %s", resp.StatusCode, resp.Request.Method, resp.Request.URL.String(), string(respBodyBytes))
 			select {
 			case <-ctx.Done():
 				return ctx.Err()
@@ -192,9 +192,9 @@ func (s *Storage) CreateObjectExclusively(ctx context.Context,
 			continue
 		}
 		if resp.StatusCode == http.StatusPreconditionFailed {
-			return storage.NewErrorf(storage.PreconditionFailed, "got %d-response to %s %s: %s", resp.StatusCode, method, url, string(respBodyBytes))
+			return storage.NewErrorf(storage.PreconditionFailed, "got %d-response to %s %s: %s", resp.StatusCode, resp.Request.Method, resp.Request.URL.String(), string(respBodyBytes))
 		}
-		return fmt.Errorf("got unexpected %d-response to %s %s: %s", resp.StatusCode, method, url, string(respBodyBytes))
+		return fmt.Errorf("got unexpected %d-response to %s %s: %s", resp.StatusCode, resp.Request.Method, resp.Request.URL.String(), string(respBodyBytes))
 	}
 	return nil
 }
