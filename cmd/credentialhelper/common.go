@@ -11,7 +11,7 @@ import (
 	"github.com/hashicorp/go-cleanhttp"
 )
 
-func doRequest(ctx context.Context, port int, reqBody, respBody interface{}) error {
+func doRequest(ctx context.Context, port int, reqBody, respBody any) error {
 	transport := cleanhttp.DefaultTransport()
 	transport.Proxy = nil
 	httpClient := &http.Client{

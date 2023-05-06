@@ -55,7 +55,7 @@ type hasCode interface {
 	code() ErrorCode
 }
 
-func NewErrorf(code ErrorCode, format string, args ...interface{}) error {
+func NewErrorf(code ErrorCode, format string, args ...any) error {
 	err := fmt.Errorf(format, args...)
 	if errUnwrap, ok := err.(unwrap); ok {
 		return &errorWithCodeUnwrap{

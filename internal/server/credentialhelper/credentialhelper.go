@@ -44,7 +44,7 @@ func NewServer(opts ServerOptions) (*Server, error) {
 	return s, nil
 }
 
-func (s *Server) logf(logLevel log.Level, format string, args ...interface{}) {
+func (s *Server) logf(logLevel log.Level, format string, args ...any) {
 	logger := log.StandardLogger()
 	if !logger.IsLevelEnabled(logLevel) {
 		return

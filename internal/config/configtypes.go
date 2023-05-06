@@ -18,7 +18,7 @@ const (
 	AccessDeny
 )
 
-func (a *Access) UnmarshalYAML(unmarshal func(interface{}) error) error {
+func (a *Access) UnmarshalYAML(unmarshal func(any) error) error {
 	var s string
 	if err := unmarshal(&s); err != nil {
 		return err
@@ -166,7 +166,7 @@ type TLS struct {
 
 type TLSVersion uint16
 
-func (t *TLSVersion) UnmarshalYAML(unmarshal func(interface{}) error) error {
+func (t *TLSVersion) UnmarshalYAML(unmarshal func(any) error) error {
 	var s string
 	if err := unmarshal(&s); err != nil {
 		return err

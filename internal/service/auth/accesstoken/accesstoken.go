@@ -42,7 +42,7 @@ func NewAuthenticator(audience string, secret []byte, timeToLive time.Duration, 
 	return a, nil
 }
 
-func (a *Authenticator) Authenticate(ctx context.Context, bearerToken string) (interface{}, error) {
+func (a *Authenticator) Authenticate(ctx context.Context, bearerToken string) (any, error) {
 	jwtParsed, err := jwt.ParseSigned(bearerToken)
 	if err != nil {
 		return nil, jasperhttp.ErrorInvalidBearerToken(fmt.Sprintf("invalid token: %v", err))

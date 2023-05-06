@@ -48,7 +48,7 @@ func (v *validateValueContext) AddError(error string) {
 	v.errorBag.AddError(v.path, error)
 }
 
-func (v *validateValueContext) AddErrorf(format string, args ...interface{}) {
+func (v *validateValueContext) AddErrorf(format string, args ...any) {
 	v.AddError(fmt.Sprintf(format, args...))
 }
 
@@ -56,7 +56,7 @@ func (v *validateValueContext) AddRequiredError() {
 	v.AddError("value must be set (to a non-null value)")
 }
 
-func (v *validateValueContext) Child(x interface{}) *validateValueContext {
+func (v *validateValueContext) Child(x any) *validateValueContext {
 	switch y := x.(type) {
 	case byte, int, int8, int16, int32, int64, uint, uint16, uint32, uint64:
 		return &validateValueContext{

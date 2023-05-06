@@ -217,7 +217,7 @@ type NotDefinedError struct {
 	s string
 }
 
-func notDefinedErrorf(format string, args ...interface{}) *NotDefinedError {
+func notDefinedErrorf(format string, args ...any) *NotDefinedError {
 	return &NotDefinedError{
 		s: fmt.Sprintf(format, args...),
 	}
