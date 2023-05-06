@@ -17,11 +17,9 @@ import (
 // 2. Go requires a dot in the host.
 // It is stricter than what is accepted by net.Dial* functions (and (*net.Dialer).Dial* functions).
 func ValidateHost(host string) (string, error) {
-	hostname, port, err := net.SplitHostPort(host)
+	hostname, _, err := net.SplitHostPort(host)
 	if err == nil {
 		return "", fmt.Errorf("host is not allowed to contain ports")
 	}
-	_ = hostname
-	_ = port
 	return hostname, nil
 }
