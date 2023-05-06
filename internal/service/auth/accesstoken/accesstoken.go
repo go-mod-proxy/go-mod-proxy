@@ -10,6 +10,7 @@ import (
 	"gopkg.in/square/go-jose.v2"
 	"gopkg.in/square/go-jose.v2/jwt"
 
+	internalErrors "github.com/go-mod-proxy/go-mod-proxy/internal/errors"
 	"github.com/go-mod-proxy/go-mod-proxy/internal/service/auth"
 )
 
@@ -61,7 +62,7 @@ func (a *Authenticator) Authenticate(ctx context.Context, bearerToken string) (a
 	}
 	identity, err := a.identityStore.FindByName(claims.Subject)
 	if err != nil {
-		if err == auth.ErrNotFound {
+		if internalErrors.ErrorIsCode(err, internalErrors.NotFound) {
 			return nil, jasperhttp.ErrorInvalidBearerToken(fmt.Sprintf("no identity exists named %s", claims.Subject))
 		}
 		return nil, err

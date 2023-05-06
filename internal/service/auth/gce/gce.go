@@ -7,6 +7,7 @@ import (
 	jaspercompute "github.com/jbrekelmans/go-lib/auth/google/compute"
 	jasperhttp "github.com/jbrekelmans/go-lib/http"
 
+	internalErrors "github.com/go-mod-proxy/go-mod-proxy/internal/errors"
 	"github.com/go-mod-proxy/go-mod-proxy/internal/service/auth"
 )
 
@@ -47,7 +48,7 @@ func (a *Authenticator) Authenticate(ctx context.Context, bearerToken string) (a
 	}
 	identity, err := a.identityStore.FindByGCEInstanceIdentityBindingEmail(instanceIdentity.Claims2.Email)
 	if err != nil {
-		if err == auth.ErrNotFound {
+		if internalErrors.ErrorIsCode(err, internalErrors.NotFound) {
 			return nil, jasperhttp.ErrorInvalidBearerToken(fmt.Sprintf("no identity exists that is bound to the GCE instance identity %s", instanceIdentity.Claims2.Email))
 		}
 		return nil, err

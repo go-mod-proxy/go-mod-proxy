@@ -6,8 +6,8 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
+	internalErrors "github.com/go-mod-proxy/go-mod-proxy/internal/errors"
 	servercommon "github.com/go-mod-proxy/go-mod-proxy/internal/server/common"
-	serviceauth "github.com/go-mod-proxy/go-mod-proxy/internal/service/auth"
 	"github.com/go-mod-proxy/go-mod-proxy/internal/util"
 )
 
@@ -24,7 +24,7 @@ func (s *Server) authenticateUserPassword(w http.ResponseWriter, req *http.Reque
 	}
 	authenticatedIdentity, err := s.identityStore.FindByName(reqBody.User)
 	if err != nil {
-		if err == serviceauth.ErrNotFound {
+		if internalErrors.ErrorIsCode(err, internalErrors.NotFound) {
 			responseUnauthorized(w, s.realm)
 			return
 		}
