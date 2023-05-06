@@ -241,9 +241,6 @@ func (s *Service) listViaParentProxy(ctx context.Context, modulePath string) (go
 	// For public modules send a request to the parent proxy directly instead of via a "go list" command.
 	// This also avoids an unnecessary second request performed by a "go list" command when GET "/@v/list" returns zero versions.
 	goListVersions, err = modproxyclient.List(ctx, s.parentProxyURL, s.httpClient, modulePath)
-	if err == modproxyclient.ErrNotFound {
-		err = internalErrors.NewErrorf(internalErrors.NotFound, "%v", err)
-	}
 	return
 }
 

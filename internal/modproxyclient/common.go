@@ -2,7 +2,6 @@ package modproxyclient
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -10,10 +9,12 @@ import (
 	"strings"
 
 	module "golang.org/x/mod/module"
+
+	internalErrors "github.com/go-mod-proxy/go-mod-proxy/internal/errors"
 )
 
 var (
-	ErrNotFound = errors.New("not found")
+	errNotFound = internalErrors.NewError(internalErrors.NotFound, "not found")
 )
 
 func doRequestCommon(ctx context.Context, baseURL string, client *http.Client, modulePath, urlSuffix string) (*http.Response, error) {
@@ -33,7 +34,7 @@ func doRequestCommon(ctx context.Context, baseURL string, client *http.Client, m
 		defer resp.Body.Close()
 		respBodyBytes, _ := io.ReadAll(resp.Body)
 		if resp.StatusCode == http.StatusNotFound || resp.StatusCode == http.StatusGone {
-			return nil, ErrNotFound
+			return nil, errNotFound
 		}
 		return nil, fmt.Errorf("server gave unexpected %d-response to request %s %s: %s",
 			resp.StatusCode,

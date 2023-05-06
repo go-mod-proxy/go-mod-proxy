@@ -605,9 +605,6 @@ func (s *Service) Latest(ctx context.Context, modulePath string) (info *gomodule
 		// checking the cache than we gain.
 		info, err = modproxyclient.Latest(ctx, s.parentProxyURL, s.httpClient, modulePath)
 		if err != nil {
-			if err == modproxyclient.ErrNotFound {
-				err = internalErrors.NewErrorf(internalErrors.NotFound, "%v", err)
-			}
 			return
 		}
 		if !s.readAfterListIsStronglyConsistent {
