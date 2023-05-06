@@ -106,8 +106,21 @@ func (e *Environ) Unset(name string) {
 		name2 = strings.ToLower(name2)
 	}
 	i, ok := e.index[name2]
-	if ok {
-		e.environ = append(e.environ[:i], e.environ[i+1:]...)
+	if !ok {
+		return
+	}
+	e.environ = append(e.environ[:i], e.environ[i+1:]...)
+
+	// Reset index.
+	// TODO optimize this
+	for name2 := range e.index {
 		delete(e.index, name2)
+	}
+	for i, nameValuePair := range e.environ {
+		name2 := nameValuePair[:strings.IndexByte(nameValuePair, '=')]
+		if !e.isCaseSensitive {
+			name2 = strings.ToLower(name2)
+		}
+		e.index[name2] = i
 	}
 }
