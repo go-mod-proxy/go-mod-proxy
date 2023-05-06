@@ -11,8 +11,8 @@ import (
 	log "github.com/sirupsen/logrus"
 	module "golang.org/x/mod/module"
 
+	internalErrors "github.com/go-mod-proxy/go-mod-proxy/internal/errors"
 	"github.com/go-mod-proxy/go-mod-proxy/internal/modproxyclient"
-	gomoduleservice "github.com/go-mod-proxy/go-mod-proxy/internal/service/gomodule"
 	"github.com/go-mod-proxy/go-mod-proxy/internal/service/storage"
 	"github.com/go-mod-proxy/go-mod-proxy/internal/util"
 )
@@ -133,7 +133,7 @@ func (s *Service) listAddObjectNames(ctx context.Context, errChan chan<- error, 
 			PageToken:  pageToken,
 		})
 		if err != nil {
-			errChan <- mapStorageError(err)
+			errChan <- err
 			return
 		}
 		versionMapMutex.Lock()
@@ -210,7 +210,7 @@ func (s *Service) listGoCmdIndex(moduleVersion *module.Version) {
 			moduleVersion.Version, moduleVersion.Path)
 		return
 	}
-	if !gomoduleservice.ErrorIsCode(err, gomoduleservice.NotFound) {
+	if !internalErrors.ErrorIsCode(err, internalErrors.NotFound) {
 		log.Errorf(`error checking if latest version (%#v) of module %#v discovered through a \"go list\" command is already cached: %v`,
 			moduleVersion.Version, moduleVersion.Path, err)
 	}
@@ -241,9 +241,6 @@ func (s *Service) listViaParentProxy(ctx context.Context, modulePath string) (go
 	// For public modules send a request to the parent proxy directly instead of via a "go list" command.
 	// This also avoids an unnecessary second request performed by a "go list" command when GET "/@v/list" returns zero versions.
 	goListVersions, err = modproxyclient.List(ctx, s.parentProxyURL, s.httpClient, modulePath)
-	if err == modproxyclient.ErrNotFound {
-		err = gomoduleservice.NewErrorf(gomoduleservice.NotFound, "%v", err)
-	}
 	return
 }
 

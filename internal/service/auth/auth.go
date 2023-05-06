@@ -1,19 +1,25 @@
 package auth
 
 import (
-	"errors"
 	"fmt"
 
 	"github.com/go-mod-proxy/go-mod-proxy/internal/config"
+	internalErrors "github.com/go-mod-proxy/go-mod-proxy/internal/errors"
 )
 
-var ErrNotFound = errors.New("not found")
+var errNotFound = internalErrors.NewError(internalErrors.NotFound, "not found")
 
 type Identity = config.Identity
 
 type IdentityStore interface {
 	Add(identity *Identity) error
+
+	// Returns an error e such that "github.com/go-mod-proxy/go-mod-proxy/internal/errors".ErrorIsCode(e, NotFound)
+	// is true if no identity with the specified email exists.
 	FindByGCEInstanceIdentityBindingEmail(email string) (*Identity, error)
+
+	// Returns an error e such that "github.com/go-mod-proxy/go-mod-proxy/internal/errors".ErrorIsCode(e, NotFound)
+	// is true if no identity with the specified name exists.
 	FindByName(name string) (*Identity, error)
 }
 
@@ -63,7 +69,7 @@ func (i *identityStore) FindByGCEInstanceIdentityBindingEmail(email string) (*Id
 	if ok {
 		return identity, nil
 	}
-	return nil, ErrNotFound
+	return nil, errNotFound
 }
 
 func (i *identityStore) FindByName(name string) (*Identity, error) {
@@ -71,5 +77,5 @@ func (i *identityStore) FindByName(name string) (*Identity, error) {
 	if ok {
 		return identity, nil
 	}
-	return nil, ErrNotFound
+	return nil, errNotFound
 }

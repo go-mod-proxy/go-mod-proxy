@@ -14,6 +14,7 @@ import (
 	"golang.org/x/mod/module"
 
 	"github.com/go-mod-proxy/go-mod-proxy/internal/config"
+	internalErrors "github.com/go-mod-proxy/go-mod-proxy/internal/errors"
 	"github.com/go-mod-proxy/go-mod-proxy/internal/server/common"
 	"github.com/go-mod-proxy/go-mod-proxy/internal/service/auth"
 	servicegomodule "github.com/go-mod-proxy/go-mod-proxy/internal/service/gomodule"
@@ -98,7 +99,7 @@ func (s *Server) authorize(identity *auth.Identity, modulePath string) config.Ac
 func (s *Server) latest(rw http.ResponseWriter, req *http.Request, modulePath string) {
 	info, err := s.goModuleService.Latest(req.Context(), modulePath)
 	if err != nil {
-		if servicegomodule.ErrorIsCode(err, servicegomodule.NotFound) {
+		if internalErrors.ErrorIsCode(err, internalErrors.NotFound) {
 			http.Error(rw, fmt.Sprintf("not found: %v", err), http.StatusNotFound)
 			return
 		}
@@ -120,7 +121,7 @@ func (s *Server) latest(rw http.ResponseWriter, req *http.Request, modulePath st
 func (s *Server) list(rw http.ResponseWriter, req *http.Request, modulePath string) {
 	d, err := s.goModuleService.List(req.Context(), modulePath)
 	if err != nil {
-		if servicegomodule.ErrorIsCode(err, servicegomodule.NotFound) {
+		if internalErrors.ErrorIsCode(err, internalErrors.NotFound) {
 			http.Error(rw, fmt.Sprintf("not found: %v", err), http.StatusNotFound)
 			return
 		}
@@ -147,7 +148,7 @@ func (s *Server) info(rw http.ResponseWriter, req *http.Request, modulePath, ver
 	moduleVersion := module.Version{Path: modulePath, Version: version}
 	info, err := s.goModuleService.Info(req.Context(), &moduleVersion)
 	if err != nil {
-		if servicegomodule.ErrorIsCode(err, servicegomodule.NotFound) {
+		if internalErrors.ErrorIsCode(err, internalErrors.NotFound) {
 			http.Error(rw, fmt.Sprintf("not found: %v", err), http.StatusNotFound)
 			return
 		}
@@ -174,7 +175,7 @@ func (s *Server) goMod(rw http.ResponseWriter, req *http.Request, modulePath, ve
 	moduleVersion := module.Version{Path: modulePath, Version: version}
 	d, err := s.goModuleService.GoMod(req.Context(), &moduleVersion)
 	if err != nil {
-		if servicegomodule.ErrorIsCode(err, servicegomodule.NotFound) {
+		if internalErrors.ErrorIsCode(err, internalErrors.NotFound) {
 			http.Error(rw, fmt.Sprintf("not found: %v", err), http.StatusNotFound)
 			return
 		}
@@ -269,7 +270,7 @@ func (s *Server) zip(rw http.ResponseWriter, req *http.Request, modulePath, vers
 	moduleVersion := module.Version{Path: modulePath, Version: version}
 	d, err := s.goModuleService.Zip(req.Context(), &moduleVersion)
 	if err != nil {
-		if servicegomodule.ErrorIsCode(err, servicegomodule.NotFound) {
+		if internalErrors.ErrorIsCode(err, internalErrors.NotFound) {
 			http.Error(rw, fmt.Sprintf("not found: %v", err), http.StatusNotFound)
 			return
 		}
