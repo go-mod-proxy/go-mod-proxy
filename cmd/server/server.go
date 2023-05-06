@@ -21,16 +21,16 @@ import (
 	"google.golang.org/api/iam/v1"
 	"google.golang.org/api/option"
 
-	"github.com/go-mod-proxy/go-mod-proxy/go/internal/pkg/config"
-	"github.com/go-mod-proxy/go-mod-proxy/go/internal/pkg/github"
-	"github.com/go-mod-proxy/go-mod-proxy/go/internal/pkg/server"
-	"github.com/go-mod-proxy/go-mod-proxy/go/internal/pkg/server/credentialhelper"
-	"github.com/go-mod-proxy/go-mod-proxy/go/internal/pkg/service/auth"
-	serviceauthaccesstoken "github.com/go-mod-proxy/go-mod-proxy/go/internal/pkg/service/auth/accesstoken"
-	serviceauthgce "github.com/go-mod-proxy/go-mod-proxy/go/internal/pkg/service/auth/gce"
-	servicegomodulegocmd "github.com/go-mod-proxy/go-mod-proxy/go/internal/pkg/service/gomodule/gocmd"
-	servicestorage "github.com/go-mod-proxy/go-mod-proxy/go/internal/pkg/service/storage"
-	servicestoragegcs "github.com/go-mod-proxy/go-mod-proxy/go/internal/pkg/service/storage/gcs"
+	"github.com/go-mod-proxy/go-mod-proxy/internal/pkg/config"
+	"github.com/go-mod-proxy/go-mod-proxy/internal/pkg/github"
+	"github.com/go-mod-proxy/go-mod-proxy/internal/pkg/server"
+	"github.com/go-mod-proxy/go-mod-proxy/internal/pkg/server/credentialhelper"
+	"github.com/go-mod-proxy/go-mod-proxy/internal/pkg/service/auth"
+	serviceauthaccesstoken "github.com/go-mod-proxy/go-mod-proxy/internal/pkg/service/auth/accesstoken"
+	serviceauthgce "github.com/go-mod-proxy/go-mod-proxy/internal/pkg/service/auth/gce"
+	servicegomodulegocmd "github.com/go-mod-proxy/go-mod-proxy/internal/pkg/service/gomodule/gocmd"
+	servicestorage "github.com/go-mod-proxy/go-mod-proxy/internal/pkg/service/storage"
+	servicestoragegcs "github.com/go-mod-proxy/go-mod-proxy/internal/pkg/service/storage/gcs"
 )
 
 // Value of http.Server.MaxHeaderBytes

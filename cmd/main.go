@@ -8,9 +8,9 @@ import (
 	"github.com/alecthomas/kong"
 	log "github.com/sirupsen/logrus"
 
-	"github.com/go-mod-proxy/go-mod-proxy/go/cmd/clientforwardproxy"
-	"github.com/go-mod-proxy/go-mod-proxy/go/cmd/credentialhelper"
-	"github.com/go-mod-proxy/go-mod-proxy/go/cmd/server"
+	"github.com/go-mod-proxy/go-mod-proxy/cmd/clientforwardproxy"
+	"github.com/go-mod-proxy/go-mod-proxy/cmd/credentialhelper"
+	"github.com/go-mod-proxy/go-mod-proxy/cmd/server"
 )
 
 func main() {

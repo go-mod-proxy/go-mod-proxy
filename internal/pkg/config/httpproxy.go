@@ -9,7 +9,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	internalhttpproxy "github.com/go-mod-proxy/go-mod-proxy/go/internal/pkg/httpproxy"
+	internalhttpproxy "github.com/go-mod-proxy/go-mod-proxy/internal/pkg/httpproxy"
 )
 
 type HTTPProxyInfo struct {

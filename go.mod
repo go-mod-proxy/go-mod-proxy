@@ -1,4 +1,4 @@
-module github.com/go-mod-proxy/go-mod-proxy/go
+module github.com/go-mod-proxy/go-mod-proxy
 
 go 1.20
 

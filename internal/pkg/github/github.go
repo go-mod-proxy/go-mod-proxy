@@ -13,7 +13,7 @@ import (
 	"github.com/google/go-github/v52/github"
 	log "github.com/sirupsen/logrus"
 
-	"github.com/go-mod-proxy/go-mod-proxy/go/internal/pkg/config"
+	"github.com/go-mod-proxy/go-mod-proxy/internal/pkg/config"
 )
 
 type GitHubClientManagerOptions struct {
