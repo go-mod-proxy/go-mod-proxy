@@ -17,6 +17,12 @@ jobs:
         with:
           check-latest: true
 
+      - name: "🧐 Fail unless gofmt'd"
+        run: |
+          gofmt -s -w .
+          git update-index --refresh
+          git diff-index --quiet HEAD --
+
       - name: "✅ Unit Test"
         run: go test ./...
 
