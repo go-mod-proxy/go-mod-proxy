@@ -16,39 +16,24 @@ func ErrorIsCode(err error, code ErrorCode) bool {
 	return GetErrorCode(err) == code
 }
 
-type errorWithCode struct {
-	c ErrorCode
-	s string
-}
-
-var _ hasCode = (*errorWithCode)(nil)
-
-func (e *errorWithCode) code() ErrorCode {
-	return e.c
-}
-
-func (e *errorWithCode) Error() string {
-	return e.s
-}
-
-type errorWithCodeUnwrap struct {
+type errorStruct struct {
 	c   ErrorCode
 	s   string
 	err error
 }
 
-var _ hasCode = (*errorWithCodeUnwrap)(nil)
-var _ unwrap = (*errorWithCodeUnwrap)(nil)
+var _ error = (*errorStruct)(nil)
+var _ hasCode = (*errorStruct)(nil)
 
-func (e *errorWithCodeUnwrap) code() ErrorCode {
+func (e *errorStruct) code() ErrorCode {
 	return e.c
 }
 
-func (e *errorWithCodeUnwrap) Error() string {
+func (e *errorStruct) Error() string {
 	return e.s
 }
 
-func (e *errorWithCodeUnwrap) Unwrap() error {
+func (e *errorStruct) Unwrap() error {
 	return e.err
 }
 
@@ -58,21 +43,11 @@ type hasCode interface {
 
 func NewErrorf(code ErrorCode, format string, args ...interface{}) error {
 	err := fmt.Errorf(format, args...)
-	if errUnwrap, ok := err.(unwrap); ok {
-		return &errorWithCodeUnwrap{
-			c:   code,
-			s:   err.Error(),
-			err: errUnwrap.Unwrap(),
-		}
+	return &errorStruct{
+		c:   code,
+		s:   err.Error(),
+		err: errors.Unwrap(err),
 	}
-	return &errorWithCode{
-		c: code,
-		s: err.Error(),
-	}
-}
-
-type unwrap interface {
-	Unwrap() error
 }
 
 func GetErrorCode(err error) ErrorCode {
