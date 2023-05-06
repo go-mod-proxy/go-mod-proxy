@@ -9,7 +9,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	jasperurl "github.com/jbrekelmans/go-lib/url"
+	jasperurl "github.com/jbrekelmans/go-url"
 
 	"github.com/go-mod-proxy/go-mod-proxy/internal/util"
 )

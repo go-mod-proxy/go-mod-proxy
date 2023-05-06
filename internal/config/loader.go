@@ -12,7 +12,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	jasperurl "github.com/jbrekelmans/go-lib/url"
+	jasperurl "github.com/jbrekelmans/go-url"
 	"gopkg.in/yaml.v2"
 
 	internalhttpproxy "github.com/go-mod-proxy/go-mod-proxy/internal/httpproxy"

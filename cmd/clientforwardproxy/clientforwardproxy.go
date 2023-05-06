@@ -9,7 +9,7 @@ import (
 	"strings"
 
 	"github.com/hashicorp/go-cleanhttp"
-	jasperurl "github.com/jbrekelmans/go-lib/url"
+	jasperurl "github.com/jbrekelmans/go-url"
 )
 
 // CLI is a type reflected by "github.com/alecthomas/kong" that configures the CLI command for the client forward proxy.
