@@ -16,6 +16,7 @@ jobs:
       - uses: actions/setup-go@v4
         with:
           check-latest: true
+          go-version-file: go.mod
 
       - name: "🧐 Fail unless gofmt'd"
         run: |
