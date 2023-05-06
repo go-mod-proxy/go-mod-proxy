@@ -132,7 +132,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 func (s *Server) serveHTTPIssueToken(w http.ResponseWriter, authenticatedIdentity *serviceauth.Identity) {
 	accessToken, err := s.accessTokenAuthenticator.Issue(authenticatedIdentity)
 	if err != nil {
-		log.Errorf("error issueing access token: %v", err)
+		log.Errorf("error issuing access token: %v", err)
 		servercommon.InternalServerError(w)
 		return
 	}
