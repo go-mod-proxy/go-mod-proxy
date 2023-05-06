@@ -37,13 +37,11 @@ import (
 const maxHeaderBytes = 5 * (1 << 10) // 5 Kibibytes (KiB)
 
 // CLI is a type reflected by "github.com/alecthomas/kong" that configures the CLI command for the client forward proxy.
-//
-//nolint:govet // linter does not like the syntax required by the kong package
 type CLI struct {
-	ConfigFile                        string `required type:"existingfile" help:"Name of the YAML config file"`
+	ConfigFile                        string `required:"" type:"existingfile" help:"Name of the YAML config file"`
 	ReadAfterListIsStronglyConsistent bool   `help:"Enable strong consistency for read-after-list, and enable strong consistency for read-after-latest for public modules. This decreases performance for list and latest endpoints, but reduces the likelihood of clients seeing errors"`
-	Port                              int    `required help:"Port to listen on"`
-	CredentialHelperPort              int    `required help:"Credential helper port to listen on"`
+	Port                              int    `required:"" help:"Port to listen on"`
+	CredentialHelperPort              int    `required:"" help:"Credential helper port to listen on"`
 	ScratchDir                        string `help:"Directory in which to create temporary scratch files"`
 }
 
