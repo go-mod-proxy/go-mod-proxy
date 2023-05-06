@@ -8,6 +8,14 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func Test_NewError(t *testing.T) {
+	err := NewError(NotFound, "object not found")
+	assert.Equal(t, &errorStruct{
+		c: NotFound,
+		s: "object not found",
+	}, err)
+}
+
 func Test_NewErrorf(t *testing.T) {
 	t.Run("C1", func(t *testing.T) {
 		innerError := errors.New("404")

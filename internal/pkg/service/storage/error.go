@@ -41,6 +41,13 @@ type hasCode interface {
 	code() ErrorCode
 }
 
+func NewError(code ErrorCode, s string) error {
+	return &errorStruct{
+		c: code,
+		s: s,
+	}
+}
+
 func NewErrorf(code ErrorCode, format string, args ...interface{}) error {
 	err := fmt.Errorf(format, args...)
 	return &errorStruct{
