@@ -30,6 +30,7 @@ import (
 	serviceauthgce "github.com/go-mod-proxy/go-mod-proxy/internal/service/auth/gce"
 	servicegomodulegocmd "github.com/go-mod-proxy/go-mod-proxy/internal/service/gomodule/gocmd"
 	servicestorage "github.com/go-mod-proxy/go-mod-proxy/internal/service/storage"
+	servicestoragefs "github.com/go-mod-proxy/go-mod-proxy/internal/service/storage/fsstorage"
 	servicestoragegcs "github.com/go-mod-proxy/go-mod-proxy/internal/service/storage/gcs"
 )
 
@@ -132,8 +133,13 @@ func Run(ctx context.Context, opts *CLI) error {
 		if err != nil {
 			return err
 		}
+	} else if cfg.Storage.FS != nil {
+		storage, err = servicestoragefs.NewFSStorage(cfg.Storage.FS.Root)
+		if err != nil {
+			return err
+		}
 	} else {
-		return fmt.Errorf("non-GCS storage is not implemented")
+		return fmt.Errorf("unsupported storage configuration")
 	}
 	var accessTokenAuth *serviceauthaccesstoken.Authenticator
 	var gceAuth *serviceauthgce.Authenticator
