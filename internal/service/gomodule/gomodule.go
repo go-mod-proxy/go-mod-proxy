@@ -10,6 +10,13 @@ import (
 
 // Info represents metadata of a particular module version. See Service.
 type Info struct {
+	// As per https://github.com/golang/go/blob/ebf8e26d03d3c01bf1611b1189e0af64c3698557/src/cmd/go/internal/modfetch/repo.go#L77.
+
+	Origin any
+	// Origin uses type any because we disallow unknown fields (so we know when new fields need to be added),
+	// and the struct is internal:
+	// https://github.com/golang/go/blob/ebf8e26d03d3c01bf1611b1189e0af64c3698557/src/cmd/go/internal/modfetch/codehost/codehost.go#L92
+
 	Version string    // version string
 	Time    time.Time // commit time
 }
