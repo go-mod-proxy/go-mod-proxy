@@ -50,6 +50,7 @@ type goModuleInfo struct {
 	Time      time.Time
 	GoModSum  string
 	GoVersion string
+	Origin    any
 }
 
 type ServiceOptions struct {
