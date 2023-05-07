@@ -28,6 +28,8 @@ func newReaderForCreateConcatObj(commitTime time.Time, goModFD, zipFD *os.File) 
 		err = fmt.Errorf("zipFD must not be nil")
 		return
 	}
+	// TODO error when commitTime <= 0 (commitTime <= 0 will be reserved
+	// for versioning concat objects)
 	var arr [binary.MaxVarintLen64]byte
 	n := binary.PutVarint(arr[:], commitTime.Unix())
 	var buf bytes.Buffer
@@ -107,6 +109,7 @@ func parseConcatObjCommon(data io.Reader) (commitTime time.Time, goModPrefix []b
 		err = fmt.Errorf("data does not start with a valid 64-bit varint")
 		return
 	}
+	// TODO add ovf detection (data corruption)
 	commitTime = time.Unix(commitTimeUnix, 0)
 	goModLengthUint64, err := binary.ReadUvarint(bufferReader)
 	if err != nil {
