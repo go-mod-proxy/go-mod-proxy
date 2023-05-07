@@ -406,10 +406,16 @@ func (l *Loader) validateRSAPrivateKey(vctx *validateValueContext, bytes []byte)
 }
 
 func (l *Loader) validateStorage(vctx *validateValueContext, storage *Storage) {
-	if storage.GCS == nil {
-		vctx.AddError(".gcs must be set (to a non-null value)")
-	} else {
+	x := 0
+	if storage.FS != nil {
+		x++
+	}
+	if storage.GCS != nil {
+		x++
 		l.validateGCSStorage(vctx.Child("gcs"), storage.GCS)
+	}
+	if x != 1 {
+		vctx.AddError("exactly one of .fs and .gcs must be set (to a non-null value)")
 	}
 }
 

@@ -69,6 +69,10 @@ type Config struct {
 	TLS               *TLS                     `yaml:"tls"`
 }
 
+type FSStorage struct {
+	Root string `yaml:"root"`
+}
+
 type GCEInstanceIdentityAuthenticator struct {
 	Audience string `yaml:"audience"`
 }
@@ -137,6 +141,7 @@ type Secret struct {
 }
 
 type Storage struct {
+	FS  *FSStorage  `yaml:"fs"`
 	GCS *GCSStorage `yaml:"gcs"`
 }
 
