@@ -5,8 +5,6 @@ import (
 	"io"
 )
 
-//
-
 type Storage interface {
 	// CreateObjectExclusively atomically creates an object named name with metadata metadata and data r if no object named name exists.
 	// Returns an error e such that "github.com/go-mod-proxy/go-mod-proxy/internal/errors".ErrorIsCode(e, PreconditionFailed)
@@ -46,7 +44,7 @@ type ObjectListOptions struct {
 	// If MaxResults is 0 then the maximum number of object names to return is implemention-defined but non-zero.
 	MaxResults int
 
-	// PageToken ccan be set to o.NextPageToken where o is an *ObjectList returned from a call to ListObjects.
+	// PageToken can be set to o.NextPageToken where o is an *ObjectList returned from a call to ListObjects.
 	PageToken string
 }
 
