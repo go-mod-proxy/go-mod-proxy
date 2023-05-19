@@ -18,7 +18,7 @@ require (
 	golang.org/x/mod v0.10.0
 	golang.org/x/net v0.9.0
 	golang.org/x/oauth2 v0.7.0
-	google.golang.org/api v0.121.0
+	google.golang.org/api v0.123.0
 	gopkg.in/square/go-jose.v2 v2.6.0
 	gopkg.in/yaml.v2 v2.4.0
 )
