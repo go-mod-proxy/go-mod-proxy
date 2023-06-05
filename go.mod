@@ -13,7 +13,7 @@ require (
 	github.com/hashicorp/go-cleanhttp v0.5.2
 	github.com/jbrekelmans/go-lib v0.0.0-20230429230849-89b06886da0f
 	github.com/jbrekelmans/go-url v0.0.0-20230429225113-9c7c3431fa67
-	github.com/sirupsen/logrus v1.9.0
+	github.com/sirupsen/logrus v1.9.3
 	github.com/stretchr/testify v1.8.2
 	golang.org/x/mod v0.10.0
 	golang.org/x/net v0.9.0
