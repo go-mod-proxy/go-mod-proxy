@@ -5,7 +5,7 @@ go 1.20
 require (
 	cloud.google.com/go/storage v1.30.1
 	github.com/alecthomas/kong v0.7.1
-	github.com/alessio/shellescape v1.4.1
+	github.com/alessio/shellescape v1.4.2
 	github.com/bradleyfalzon/ghinstallation/v2 v2.4.0
 	github.com/google/go-github/v52 v52.0.0
 	github.com/googleapis/gax-go/v2 v2.8.0
